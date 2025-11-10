@@ -16,9 +16,38 @@
         .alert-banner {
             animation: shake 0.5s;
         }
+        
+        .audio-prompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .audio-prompt-hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-50 p-5">
+    <!-- Audio Enable Prompt -->
+    <div id="audioPrompt" class="audio-prompt">
+        <div class="bg-white rounded-lg p-8 max-w-md text-center shadow-2xl">
+            <div class="text-5xl mb-4">🔔</div>
+            <h2 class="text-2xl font-medium text-gray-800 mb-3">Enable Alert Notifications</h2>
+            <p class="text-gray-600 mb-6">Click the button below to enable sound alerts for high-risk events</p>
+            <button onclick="enableAudio()" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors duration-200">
+                Enable Alerts
+            </button>
+        </div>
+    </div>
+    
     <div id="alertBanner" class="alert-banner fixed top-5 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 px-10 py-4 rounded-lg text-lg font-medium shadow-lg z-50 hidden"></div>
     
     <div class="max-w-7xl mx-auto">
@@ -152,6 +181,40 @@
                 audioContext.resume().then(() => {
                     console.log('AudioContext resumed, state:', audioContext.state);
                 });
+            }
+        }
+
+        // Enable audio and hide prompt
+        function enableAudio() {
+            // Initialize audio context
+            initAudioContext();
+            
+            // Play a silent sound to unlock audio
+            if (audioContext) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.01);
+            }
+            
+            // Hide the prompt
+            document.getElementById('audioPrompt').classList.add('audio-prompt-hidden');
+            
+            // Store preference
+            localStorage.setItem('audioEnabled', 'true');
+            
+            console.log('✅ Audio alerts enabled and ready!');
+        }
+
+        // Check if audio was already enabled
+        function checkAudioPreference() {
+            const audioEnabled = localStorage.getItem('audioEnabled');
+            if (audioEnabled === 'true') {
+                document.getElementById('audioPrompt').classList.add('audio-prompt-hidden');
+                initAudioContext();
             }
         }
 
@@ -354,10 +417,8 @@
                 `Last updated: ${now.toLocaleTimeString()}`;
         }
 
-        // Initialize audio context on user interaction
-        document.addEventListener('click', () => {
-            initAudioContext();
-        }, { once: true });
+        // Check audio preference on page load
+        checkAudioPreference();
 
         // Initialize Supabase real-time on page load
         initSupabase();
