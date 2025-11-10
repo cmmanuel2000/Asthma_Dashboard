@@ -7,67 +7,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 p-5">
+<body class="min-h-screen bg-gray-50 p-5">
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-center text-white text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">History & Analytics</h1>
+        <h1 class="text-center text-gray-800 text-3xl md:text-4xl font-light mb-2 tracking-tight">History & Analytics</h1>
+        <p class="text-center text-gray-500 text-sm mb-8">Historical data and trend analysis</p>
         
-        <div class="text-center mb-8 space-x-2 md:space-x-4">
-            <button onclick="window.location.href='index.html'" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+        <div class="text-center mb-8 space-x-2 md:space-x-3">
+            <button onclick="window.location.href='index.html'" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">
                 Back to Dashboard
             </button>
-            <button onclick="loadData()" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+            <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">
                 Refresh Data
             </button>
         </div>
         
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
-                <div class="text-3xl font-bold text-indigo-600" id="totalRecords">--</div>
-                <div class="text-gray-600 text-sm mt-2">Total Records</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-medium text-gray-800" id="totalRecords">--</div>
+                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Total Records</div>
             </div>
-            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
-                <div class="text-3xl font-bold text-red-600" id="highRiskCount">--</div>
-                <div class="text-gray-600 text-sm mt-2">High Risk Events</div>
+            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-medium text-red-600" id="highRiskCount">--</div>
+                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">High Risk Events</div>
             </div>
-            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
-                <div class="text-3xl font-bold text-blue-600" id="avgSpO2">--</div>
-                <div class="text-gray-600 text-sm mt-2">Avg SpO2 (%)</div>
+            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-medium text-blue-600" id="avgSpO2">--</div>
+                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Avg SpO2 (%)</div>
             </div>
-            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
-                <div class="text-3xl font-bold text-orange-600" id="avgTemp">--</div>
-                <div class="text-gray-600 text-sm mt-2">Avg Temp (°C)</div>
+            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div class="text-2xl font-medium text-gray-800" id="avgTemp">--</div>
+                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Avg Temp (°C)</div>
             </div>
         </div>
         
         <!-- Risk Trend Over Time -->
-        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
-            <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Risk Level Trend (Last 24 Hours)</h2>
+        <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7 mb-5">
+            <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Risk Level Trend (Last 24 Hours)</h2>
             <canvas id="riskTrendChart"></canvas>
         </div>
         
         <!-- Grid with two charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
             <!-- SpO2 Levels -->
-            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-                <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Blood Oxygen (SpO2) Levels Over Time</h2>
+            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
+                <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Blood Oxygen (SpO2) Levels Over Time</h2>
                 <canvas id="spo2Chart"></canvas>
             </div>
             
             <!-- Environmental Factors -->
-            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
-                <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Environmental Factors</h2>
+            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
+                <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Environmental Factors</h2>
                 <canvas id="environmentalChart"></canvas>
             </div>
         </div>
         
         <!-- Event Distribution -->
-        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
-            <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Event Type Distribution</h2>
+        <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7 mb-6">
+            <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Event Type Distribution</h2>
             <canvas id="eventDistributionChart"></canvas>
         </div>
         
-        <div class="text-center text-white text-xl py-10" id="loadingMessage">Loading historical data...</div>
+        <div class="text-center text-gray-400 text-xs py-10" id="loadingMessage">Loading historical data...</div>
     </div>
 
     <script>
