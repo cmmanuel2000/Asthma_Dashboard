@@ -4,182 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History & Analytics - Asthma Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto;
-        }
-        
-        h1 { 
-            text-align: center; 
-            color: white;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .nav-buttons {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .nav-btn {
-            background: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            margin: 0 10px;
-            color: #667eea;
-        }
-        
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 30px;
-            margin-bottom: 25px;
-        }
-        
-        .chart-title {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            border-left: 4px solid #667eea;
-            padding-left: 15px;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-        }
-        
-        @media (max-width: 968px) {
-            .grid { grid-template-columns: 1fr; }
-            h1 { font-size: 2em; }
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-        
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-        }
-        
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.2em;
-            padding: 40px;
-        }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>📊 History & Analytics</h1>
+<body class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 p-5">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-center text-white text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">History & Analytics</h1>
         
-        <div class="nav-buttons">
-            <button class="nav-btn" onclick="window.location.href='index.html'">
-                🏠 Back to Dashboard
+        <div class="text-center mb-8 space-x-2 md:space-x-4">
+            <button onclick="window.location.href='index.html'" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+                Back to Dashboard
             </button>
-            <button class="nav-btn" onclick="loadData()">
-                🔄 Refresh Data
+            <button onclick="loadData()" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+                Refresh Data
             </button>
         </div>
         
         <!-- Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="totalRecords">--</div>
-                <div class="stat-label">Total Records</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
+                <div class="text-3xl font-bold text-indigo-600" id="totalRecords">--</div>
+                <div class="text-gray-600 text-sm mt-2">Total Records</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="highRiskCount">--</div>
-                <div class="stat-label">High Risk Events</div>
+            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
+                <div class="text-3xl font-bold text-red-600" id="highRiskCount">--</div>
+                <div class="text-gray-600 text-sm mt-2">High Risk Events</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="avgSpO2">--</div>
-                <div class="stat-label">Avg SpO2 (%)</div>
+            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
+                <div class="text-3xl font-bold text-blue-600" id="avgSpO2">--</div>
+                <div class="text-gray-600 text-sm mt-2">Avg SpO2 (%)</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="avgTemp">--</div>
-                <div class="stat-label">Avg Temp (°C)</div>
+            <div class="bg-white rounded-xl p-5 text-center shadow-lg">
+                <div class="text-3xl font-bold text-orange-600" id="avgTemp">--</div>
+                <div class="text-gray-600 text-sm mt-2">Avg Temp (°C)</div>
             </div>
         </div>
         
         <!-- Risk Trend Over Time -->
-        <div class="chart-container">
-            <h2 class="chart-title">📈 Risk Level Trend (Last 24 Hours)</h2>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Risk Level Trend (Last 24 Hours)</h2>
             <canvas id="riskTrendChart"></canvas>
         </div>
         
         <!-- Grid with two charts -->
-        <div class="grid">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- SpO2 Levels -->
-            <div class="chart-container">
-                <h2 class="chart-title">💉 SpO2 Levels Over Time</h2>
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Blood Oxygen (SpO2) Levels Over Time</h2>
                 <canvas id="spo2Chart"></canvas>
             </div>
             
             <!-- Environmental Factors -->
-            <div class="chart-container">
-                <h2 class="chart-title">🌡️ Environmental Factors</h2>
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Environmental Factors</h2>
                 <canvas id="environmentalChart"></canvas>
             </div>
         </div>
         
         <!-- Event Distribution -->
-        <div class="chart-container">
-            <h2 class="chart-title">🎯 Event Type Distribution</h2>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6">
+            <h2 class="text-2xl font-bold mb-5 text-gray-800 border-l-4 border-indigo-500 pl-4">Event Type Distribution</h2>
             <canvas id="eventDistributionChart"></canvas>
         </div>
         
-        <div class="loading" id="loadingMessage">Loading historical data...</div>
+        <div class="text-center text-white text-xl py-10" id="loadingMessage">Loading historical data...</div>
     </div>
 
     <script>
@@ -188,10 +76,8 @@
         // Function to load data from Supabase
         async function loadData() {
             try {
-                document.getElementById('loadingMessage').style.display = 'block';
+                document.getElementById('loadingMessage').classList.remove('hidden');
                 
-                // In a real implementation, this would fetch from your API
-                // For now, we'll fetch the last 100 records
                 const response = await fetch('/api/history', { method: 'POST' });
                 
                 if (!response.ok) {
@@ -200,7 +86,7 @@
                 
                 const data = await response.json();
                 
-                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('loadingMessage').classList.add('hidden');
                 
                 // Update statistics
                 updateStatistics(data);
@@ -214,7 +100,7 @@
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loadingMessage').innerHTML = 
-                    '<span style="color: #e74c3c;">Error loading data. Using demo data...</span>';
+                    '<span class="text-red-200">Error loading data. Using demo data...</span>';
                 
                 // Load demo data
                 loadDemoData();

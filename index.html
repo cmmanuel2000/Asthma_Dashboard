@@ -1,579 +1,333 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asthma Risk Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto;
-        }
-        
-        h1 { 
-            text-align: center; 
-            color: white;
-            font-size: 2.5em;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .dashboard { 
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 30px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .dashboard:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-        }
-        
-        h2 { 
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            border-left: 4px solid #667eea;
-            padding-left: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        h3 {
-            font-size: 1.1em;
-            margin: 20px 0 15px 0;
-            color: #34495e;
-            font-weight: 600;
-        }
-        
-        .metric { 
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            transition: background 0.2s ease;
-        }
-        
-        .metric:hover {
-            background: #e9ecef;
-        }
-        
-        .metric strong { 
-            display: inline-block;
-            width: 180px;
-            color: #495057;
-            font-weight: 600;
-        }
-        
-        .metric span {
-            flex: 1;
-            color: #212529;
-            font-weight: 500;
-        }
-        
-        .grid { 
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-        }
-        
-        @media (max-width: 968px) {
-            .grid { grid-template-columns: 1fr; }
-            h1 { font-size: 2em; }
-        }
-        
-        .risk-high { 
-            color: #e74c3c !important;
-            font-weight: bold !important;
-            font-size: 1.1em;
-            padding: 4px 12px;
-            background: #ffebee;
-            border-radius: 6px;
-            display: inline-block;
-        }
-        
-        .risk-medium { 
-            color: #f39c12 !important;
-            font-weight: bold !important;
-            font-size: 1.1em;
-            padding: 4px 12px;
-            background: #fff3e0;
-            border-radius: 6px;
-            display: inline-block;
-        }
-        
-        .risk-safe { 
-            color: #27ae60 !important;
-            font-weight: bold !important;
-            font-size: 1.1em;
-            padding: 4px 12px;
-            background: #e8f5e9;
-            border-radius: 6px;
-            display: inline-block;
-        }
-        
-        hr {
-            margin: 25px 0;
-            border: none;
-            border-top: 2px solid #e9ecef;
-        }
-        
-        .loading {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-        }
-        
-        .last-update {
-            text-align: center;
-            color: white;
-            font-size: 0.9em;
-            margin-top: 20px;
-            opacity: 0.9;
-        }
-        
-        .icon {
-            font-size: 1.2em;
-        }
-        
-        .notification-controls {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .notification-btn {
-            background: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .notification-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        
-        .notification-btn.enabled {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .notification-btn.disabled {
-            background: #e74c3c;
-            color: white;
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            25% { transform: translateX(-50%) rotate(-2deg); }
+            75% { transform: translateX(-50%) rotate(2deg); }
         }
         
         .alert-banner {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e74c3c;
-            color: white;
-            padding: 20px 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: none;
-            animation: slideDown 0.5s ease;
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-        
-        .alert-banner.show {
-            display: block;
-        }
-        
-        @keyframes slideDown {
-            from {
-                transform: translateX(-50%) translateY(-100px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(-50%) translateY(0);
-                opacity: 1;
-            }
+            animation: shake 0.5s;
         }
     </style>
 </head>
-<body>
-
-    <div class="container">
-        <h1><span class="icon">🫁</span> Asthma Risk Dashboard <span class="icon">📊</span></h1>
+<body class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 p-5">
+    <div id="alertBanner" class="alert-banner fixed top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white px-10 py-5 rounded-xl text-xl font-bold shadow-2xl z-50 hidden"></div>
+    
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-center text-white text-4xl md:text-5xl font-bold mb-8 drop-shadow-lg">Asthma Risk Monitoring Dashboard</h1>
         
-        <!-- Alert Banner -->
-        <div id="alertBanner" class="alert-banner">
-            🚨 HIGH RISK ALERT DETECTED! 🚨
+        <div class="text-center mb-8 space-x-2 md:space-x-4">
+            <button onclick="window.location.href='history.html'" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">View History & Trends</button>
+            <button onclick="testSound()" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">Test Alert Sound</button>
+            <button id="toggleSound" onclick="toggleSoundNotifications()" class="bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"><span id="soundIcon">🔊</span> <span id="soundText">ON</span></button>
         </div>
         
-        <!-- Notification Controls -->
-        <div class="notification-controls">
-            <button id="notificationBtn" class="notification-btn enabled" onclick="toggleNotifications()">
-                <span id="notificationIcon">🔔</span>
-                <span id="notificationText">Notifications Enabled</span>
-            </button>
-            <button class="notification-btn" onclick="testSound()" style="background: #3498db; color: white; margin-left: 10px;">
-                🔊 Test Sound
-            </button>
-            <button class="notification-btn" onclick="window.location.href='history.html'" style="background: #9b59b6; color: white; margin-left: 10px;">
-                📊 View History
-            </button>
-        </div>
-        
-        <div class="grid">
-            <!-- Physiological Assessment -->
-            <div class="dashboard">
-                <h2><span class="icon">❤️</span> Physiological Assessment</h2>
-                <div class="metric">
-                    <strong>Final Risk:</strong>
-                    <span id="finalRisk" class="loading">Loading...</span>
-                </div>
-                <div class="metric">
-                    <strong>Risk Score:</strong>
-                    <span id="riskScore" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Confidence:</strong>
-                    <span id="confidence" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Reasoning:</strong>
-                    <span id="reasoning" class="loading">Fetching data...</span>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Physiological Panel -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-3xl">
+                <h2 class="text-2xl md:text-3xl font-bold mb-6 text-gray-800 border-b-4 border-indigo-500 pb-3">Health Monitoring</h2>
+                
+                <h3 class="text-lg md:text-xl font-semibold mb-4 text-gray-700">Vital Signs</h3>
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Blood Oxygen (SpO2)</span>
+                        <span class="text-xl font-bold text-gray-900" id="spo2">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Heart Rate</span>
+                        <span class="text-xl font-bold text-gray-900" id="heartRate">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Breathing Rate</span>
+                        <span class="text-xl font-bold text-gray-900" id="breathingRate">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Respiratory Sounds</span>
+                        <span class="text-xl font-bold text-gray-900" id="audioDetection">--</span>
+                    </div>
                 </div>
                 
-                <hr>
-                
-                <h3>📈 Sensor Readings</h3>
-                <div class="metric">
-                    <strong>SpO2 Level:</strong>
-                    <span id="spo2" class="loading">--</span>
+                <h3 class="text-lg md:text-xl font-semibold mb-4 text-gray-700">Health Status</h3>
+                <div class="text-center my-5">
+                    <span class="risk-badge inline-block px-6 py-2 rounded-full font-bold text-lg uppercase" id="physioRisk">--</span>
                 </div>
-                <div class="metric">
-                    <strong>Breathing Rate:</strong>
-                    <span id="breathingRate" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Audio Detection:</strong>
-                    <span id="audioRisk" class="loading">--</span>
+                <div class="mt-4">
+                    <strong class="text-gray-700">Detected Issues:</strong>
+                    <div id="physioTriggers" class="mt-3 text-gray-500">--</div>
                 </div>
             </div>
             
-            <!-- Environmental Assessment -->
-            <div class="dashboard">
-                <h2><span class="icon">🌡️</span> Environmental Assessment</h2>
-                <div class="metric">
-                    <strong>Environmental Risk:</strong>
-                    <span id="envRisk" class="loading">Loading...</span>
-                </div>
-                <div class="metric">
-                    <strong>Risk Score:</strong>
-                    <span id="envRiskScore" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Confidence:</strong>
-                    <span id="envConfidence" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Active Triggers:</strong>
-                    <span id="envTriggers" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Analysis:</strong>
-                    <span id="envReasoning" class="loading">Fetching data...</span>
+            <!-- Environmental Panel -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-3xl">
+                <h2 class="text-2xl md:text-3xl font-bold mb-6 text-gray-800 border-b-4 border-indigo-500 pb-3">Environmental Conditions</h2>
+                
+                <h3 class="text-lg md:text-xl font-semibold mb-4 text-gray-700">Current Measurements</h3>
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Temperature</span>
+                        <span class="text-xl font-bold text-gray-900" id="temperature">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">Humidity</span>
+                        <span class="text-xl font-bold text-gray-900" id="humidity">--</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="font-semibold text-gray-600">PM2.5</span>
+                        <span class="text-xl font-bold text-gray-900" id="pm25">--</span>
+                    </div>
                 </div>
                 
-                <hr>
-                
-                <h3>🌍 Environmental Data</h3>
-                <div class="metric">
-                    <strong>Temperature:</strong>
-                    <span id="temperature" class="loading">--</span>
+                <h3 class="text-lg md:text-xl font-semibold mb-4 text-gray-700">Environmental Status</h3>
+                <div class="text-center my-5">
+                    <span class="risk-badge inline-block px-6 py-2 rounded-full font-bold text-lg uppercase" id="envRisk">--</span>
                 </div>
-                <div class="metric">
-                    <strong>Humidity:</strong>
-                    <span id="humidity" class="loading">--</span>
-                </div>
-                <div class="metric">
-                    <strong>Air Quality (PM2.5):</strong>
-                    <span id="pm25" class="loading">--</span>
+                <div class="mt-4">
+                    <strong class="text-gray-700">Environmental Triggers:</strong>
+                    <div id="envTriggers" class="mt-3 text-gray-500">--</div>
                 </div>
             </div>
         </div>
         
-        <div class="last-update">
-            Last updated: <span id="lastUpdate">Never</span>
-        </div>
+        <div class="text-center text-white text-sm mt-5 opacity-90" id="lastUpdate">Last updated: --</div>
+        
+        <div id="loadingMessage" class="text-center text-white text-xl py-10">Loading sensor data...</div>
     </div>
 
     <script>
-        // Notification state
-        let notificationsEnabled = true;
+        let soundEnabled = true;
+        let audioContext = null;
         let lastAlertTime = 0;
-        const ALERT_COOLDOWN = 60000; // 1 minute cooldown between alerts
-        
-        // Function to play alert sound using multiple beeps
-        async function playAlertSound() {
-            if (!notificationsEnabled) return;
+
+        // Initialize Audio Context
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('AudioContext created, state:', audioContext.state);
+            }
             
-            try {
-                // Create a loud, attention-grabbing alarm sound
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // IMPORTANT: Resume the audio context if it's suspended
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
-                
-                console.log('AudioContext state:', audioContext.state);
-                
-                function beep(startTime, frequency, duration) {
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.value = frequency;
-                    oscillator.type = 'square';
-                    
-                    // Louder volume
-                    gainNode.gain.setValueAtTime(0.7, startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-                    
-                    oscillator.start(startTime);
-                    oscillator.stop(startTime + duration);
-                }
-                
-                const now = audioContext.currentTime;
-                
-                // Create an alarm pattern: high-low-high beeps
-                beep(now, 1000, 0.15);           // High beep
-                beep(now + 0.2, 800, 0.15);      // Low beep
-                beep(now + 0.4, 1000, 0.15);     // High beep
-                beep(now + 0.6, 800, 0.15);      // Low beep
-                beep(now + 0.8, 1000, 0.3);      // Long high beep
-                
-                console.log('✓ Alert sound triggered - Check your volume!');
-            } catch (error) {
-                console.error('✗ Error playing alert sound:', error);
-                alert('⚠️ HIGH RISK ALERT! (Sound failed to play: ' + error.message + ')');
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('AudioContext resumed, state:', audioContext.state);
+                });
             }
         }
-        
-        // Function to show alert banner
+
+        // Play alert sound with beeping pattern
+        async function playAlertSound() {
+            if (!soundEnabled) {
+                console.log('Sound notifications disabled');
+                return;
+            }
+            
+            initAudioContext();
+            
+            if (audioContext.state !== 'running') {
+                await audioContext.resume();
+                console.log('AudioContext resumed for playback');
+            }
+            
+            console.log('Playing alert sound... AudioContext state:', audioContext.state);
+            
+            // Create 5 beeps
+            for (let i = 0; i < 5; i++) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // Higher frequency for alert
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.7, audioContext.currentTime + i * 0.3); // Louder volume
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.3 + 0.2);
+                
+                oscillator.start(audioContext.currentTime + i * 0.3);
+                oscillator.stop(audioContext.currentTime + i * 0.3 + 0.2);
+            }
+        }
+
+        // Toggle sound notifications
+        function toggleSoundNotifications() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('toggleSound');
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            
+            if (soundEnabled) {
+                btn.className = 'bg-white text-indigo-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300';
+                icon.textContent = '🔊';
+                text.textContent = 'ON';
+            } else {
+                btn.className = 'bg-gray-300 text-gray-600 px-4 md:px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300';
+                icon.textContent = '🔇';
+                text.textContent = 'OFF';
+            }
+            
+            console.log('Sound notifications:', soundEnabled ? 'ENABLED' : 'DISABLED');
+        }
+
+        // Test sound function
+        function testSound() {
+            console.log('Testing alert sound...');
+            playAlertSound();
+            showAlert('This is a test alert. Sound should be playing.');
+        }
+
+        // Show alert banner
         function showAlert(message) {
             const banner = document.getElementById('alertBanner');
             banner.textContent = message;
-            banner.classList.add('show');
+            banner.classList.remove('hidden');
             
-            // Hide after 5 seconds
             setTimeout(() => {
-                banner.classList.remove('show');
+                banner.classList.add('hidden');
             }, 5000);
         }
-        
-        // Function to check for high risk and trigger alert
-        function checkAndAlert(riskLevel, riskType) {
-            if (!notificationsEnabled) return;
-            
+
+        // Check for high risk and alert
+        function checkAndAlert(physioRisk, envRisk) {
             const now = Date.now();
-            if (riskLevel === 'HIGH' && (now - lastAlertTime > ALERT_COOLDOWN)) {
-                lastAlertTime = now;
+            const cooldownPeriod = 60000; // 1 minute cooldown
+            
+            if (now - lastAlertTime < cooldownPeriod) {
+                console.log('Alert in cooldown period');
+                return;
+            }
+            
+            if (physioRisk === 'high') {
+                console.log('HIGH PHYSIOLOGICAL RISK DETECTED!');
+                showAlert('⚠️ HIGH PHYSIOLOGICAL RISK DETECTED');
                 playAlertSound();
-                showAlert(`🚨 HIGH ${riskType} RISK DETECTED! 🚨`);
-                
-                // Browser notification (if permitted)
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Asthma Risk Alert', {
-                        body: `High ${riskType} risk detected! Please check the dashboard.`,
-                        icon: '🫁',
-                        tag: 'asthma-alert'
-                    });
-                }
+                lastAlertTime = now;
+            } else if (envRisk === 'high') {
+                console.log('HIGH ENVIRONMENTAL RISK DETECTED!');
+                showAlert('⚠️ HIGH ENVIRONMENTAL RISK DETECTED');
+                playAlertSound();
+                lastAlertTime = now;
             }
         }
-        
-        // Toggle notifications
-        function toggleNotifications() {
-            notificationsEnabled = !notificationsEnabled;
-            const btn = document.getElementById('notificationBtn');
-            const icon = document.getElementById('notificationIcon');
-            const text = document.getElementById('notificationText');
+
+        // Update display with risk data
+        function updateDisplay(riskId, triggersId, risk, triggers) {
+            // Update risk badge styling with Tailwind
+            const riskBadge = document.getElementById(riskId);
+            riskBadge.textContent = risk.toUpperCase();
+            riskBadge.className = 'inline-block px-6 py-2 rounded-full font-bold text-lg uppercase';
             
-            if (notificationsEnabled) {
-                btn.classList.remove('disabled');
-                btn.classList.add('enabled');
-                icon.textContent = '🔔';
-                text.textContent = 'Notifications Enabled';
-                
-                // Request notification permission
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
+            if (risk === 'safe') {
+                riskBadge.classList.add('bg-green-100', 'text-green-800');
+            } else if (risk === 'medium') {
+                riskBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+            } else if (risk === 'high') {
+                riskBadge.classList.add('bg-red-100', 'text-red-800');
+            }
+            
+            // Update triggers list
+            const triggersDiv = document.getElementById(triggersId);
+            if (triggers && triggers.length > 0) {
+                triggersDiv.innerHTML = '<ul class="list-disc list-inside space-y-1">' + 
+                    triggers.map(t => `<li class="text-gray-700">${t}</li>`).join('') + 
+                    '</ul>';
             } else {
-                btn.classList.remove('enabled');
-                btn.classList.add('disabled');
-                icon.textContent = '🔕';
-                text.textContent = 'Notifications Disabled';
+                triggersDiv.innerHTML = '<span class="text-green-600">No issues detected</span>';
             }
         }
-        
-        // Test sound function
-        function testSound() {
-            console.log('Testing sound...');
-            playAlertSound();
-            showAlert('🔊 This is a test alert! Sound should be playing.');
-        }
-        
-        // Function to apply risk color styling
-        function getRiskClass(risk) {
-            if (!risk) return '';
-            const riskLower = risk.toLowerCase();
-            if (riskLower === 'high') return 'risk-high';
-            if (riskLower === 'medium') return 'risk-medium';
-            if (riskLower === 'safe') return 'risk-safe';
-            return '';
-        }
 
-        // Fetch physiological risk assessment
-        async function getPhysiologicalAssessment() {
-            const apiUrl = '/api/assess-risk';
-
+        // Fetch and update physiological assessment
+        async function updatePhysiologicalAssessment() {
             try {
-                console.log("Fetching physiological assessment...");
-                const response = await fetch(apiUrl, { method: 'POST' });
-
+                const response = await fetch('/api/assess-risk', { method: 'POST' });
+                
                 if (!response.ok) {
-                    console.error('API Error:', response.status);
-                    document.getElementById('reasoning').innerText = `Error: Server responded with status ${response.status}`;
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
+                
                 const data = await response.json();
-                console.log('Received physiological data:', data);
-
+                console.log('Physiological data:', data);
+                
+                // Update sensor readings
+                document.getElementById('spo2').textContent = data.sensor_data.spo2 ? data.sensor_data.spo2 + '%' : '--';
+                document.getElementById('heartRate').textContent = data.sensor_data.heart_rate ? data.sensor_data.heart_rate + ' bpm' : '--';
+                document.getElementById('breathingRate').textContent = data.sensor_data.breathing_rate ? data.sensor_data.breathing_rate + ' bpm' : '--';
+                document.getElementById('audioDetection').textContent = data.sensor_data.audio_detection || '--';
+                
                 // Update risk assessment
-                const finalRiskEl = document.getElementById('finalRisk');
-                finalRiskEl.innerText = data.final_risk;
-                finalRiskEl.className = getRiskClass(data.final_risk);
+                updateDisplay('physioRisk', 'physioTriggers', data.risk, data.triggers);
                 
-                // Check for high risk and trigger alert
-                checkAndAlert(data.final_risk, 'PHYSIOLOGICAL');
+                return data.risk;
                 
-                document.getElementById('riskScore').innerText = data.risk_score.toFixed(2);
-                document.getElementById('confidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
-                document.getElementById('reasoning').innerText = data.reasoning;
-
-                // Update sensor data
-                if (data.sensor_inputs) {
-                    document.getElementById('spo2').innerText = `${data.sensor_inputs.spo2.toFixed(1)}%`;
-                    document.getElementById('breathingRate').innerText = `${data.sensor_inputs.bpm.toFixed(1)} bpm`;
-                    
-                    const audioRiskLevels = ['Safe (0)', 'Medium (1)', 'High (2)'];
-                    document.getElementById('audioRisk').innerText = audioRiskLevels[data.sensor_inputs.audio_risk] || data.sensor_inputs.audio_risk;
-                }
-
             } catch (error) {
-                console.error('Failed to fetch physiological assessment:', error);
-                document.getElementById('reasoning').innerText = "Failed to connect to the API.";
+                console.error('Error fetching physiological assessment:', error);
+                document.getElementById('physioRisk').textContent = 'Error';
+                return null;
             }
         }
 
-        // Fetch environmental assessment
-        async function getEnvironmentalAssessment() {
-            const apiUrl = '/api/assess-environmental';
-
+        // Fetch and update environmental assessment
+        async function updateEnvironmentalAssessment() {
             try {
-                console.log("Fetching environmental assessment...");
-                const response = await fetch(apiUrl, { method: 'POST' });
-
+                const response = await fetch('/api/assess-environmental', { method: 'POST' });
+                
                 if (!response.ok) {
-                    console.error('Environmental API Error:', response.status);
-                    const errorData = await response.json();
-                    document.getElementById('envReasoning').innerText = errorData.message || `Error: ${response.status}`;
-                    return;
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
+                
                 const data = await response.json();
-                console.log('Received environmental data:', data);
-
-                // Update environmental risk assessment
-                const envRiskEl = document.getElementById('envRisk');
-                envRiskEl.innerText = data.environmental_risk;
-                envRiskEl.className = getRiskClass(data.environmental_risk);
+                console.log('Environmental data:', data);
                 
-                // Check for high risk and trigger alert
-                checkAndAlert(data.environmental_risk, 'ENVIRONMENTAL');
+                // Update environmental readings
+                document.getElementById('temperature').textContent = data.sensor_data.temperature ? data.sensor_data.temperature.toFixed(1) + '°C' : '--';
+                document.getElementById('humidity').textContent = data.sensor_data.humidity ? data.sensor_data.humidity.toFixed(1) + '%' : '--';
+                document.getElementById('pm25').textContent = data.sensor_data.pm25 ? data.sensor_data.pm25.toFixed(1) + ' µg/m³' : '--';
                 
-                document.getElementById('envRiskScore').innerText = data.risk_score.toFixed(2);
-                document.getElementById('envConfidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
-                document.getElementById('envReasoning').innerText = data.reasoning;
+                // Update risk assessment
+                updateDisplay('envRisk', 'envTriggers', data.risk, data.triggers);
                 
-                // Update triggers
-                if (data.triggers && data.triggers.length > 0) {
-                    document.getElementById('envTriggers').innerText = data.triggers.join(', ');
-                } else {
-                    document.getElementById('envTriggers').innerText = 'None';
-                }
-
-                // Update environmental sensor data
-                if (data.environmental_inputs) {
-                    document.getElementById('temperature').innerText = `${data.environmental_inputs.temperature.toFixed(1)}°C`;
-                    document.getElementById('humidity').innerText = `${data.environmental_inputs.humidity.toFixed(1)}%`;
-                    document.getElementById('pm25').innerText = `${data.environmental_inputs.pm25.toFixed(1)} µg/m³`;
-                }
-
+                return data.risk;
+                
             } catch (error) {
-                console.error('Failed to fetch environmental assessment:', error);
-                document.getElementById('envReasoning').innerText = "Failed to connect to the API.";
+                console.error('Error fetching environmental assessment:', error);
+                document.getElementById('envRisk').textContent = 'Error';
+                return null;
             }
         }
 
-        // Fetch all assessments
-        function getAllAssessments() {
-            getPhysiologicalAssessment();
-            getEnvironmentalAssessment();
+        // Update all assessments
+        async function updateAllAssessments() {
+            document.getElementById('loadingMessage').classList.add('hidden');
             
-            // Update last update time
+            const physioRisk = await updatePhysiologicalAssessment();
+            const envRisk = await updateEnvironmentalAssessment();
+            
+            // Check for high risk and trigger alerts
+            if (physioRisk && envRisk) {
+                checkAndAlert(physioRisk, envRisk);
+            }
+            
+            // Update timestamp
             const now = new Date();
-            document.getElementById('lastUpdate').innerText = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = 
+                `Last updated: ${now.toLocaleTimeString()}`;
         }
 
-        // Run immediately when the page loads
-        getAllAssessments();
+        // Initialize audio context on user interaction
+        document.addEventListener('click', () => {
+            initAudioContext();
+        }, { once: true });
 
-        // Then, set it to run automatically every 30 seconds
-        setInterval(getAllAssessments, 30000);
+        // Initial load
+        updateAllAssessments();
+
+        // Auto-refresh every 30 seconds
+        setInterval(updateAllAssessments, 30000);
     </script>
 </body>
 </html>
-
