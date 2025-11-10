@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asthma Risk Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @keyframes shake {
             0%, 100% { transform: translateX(-50%) rotate(0deg); }
@@ -101,6 +102,44 @@
         let soundEnabled = true;
         let audioContext = null;
         let lastAlertTime = 0;
+        let supabaseClient = null;
+        let realtimeChannel = null;
+
+        // Initialize Supabase client for real-time updates
+        function initSupabase() {
+            const SUPABASE_URL = 'https://jearsafwiminfekcixgk.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplYXJzYWZ3aW1pbmZla2NpeGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzExMjc5MzcsImV4cCI6MjA0NjcwMzkzN30.iuUrIi3I7lmcdoE0MqLhH4q4dQJ8PjZQg2f9yxsyQck';
+            
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase client initialized for real-time updates');
+            
+            // Subscribe to real-time changes
+            subscribeToRealtimeUpdates();
+        }
+
+        // Subscribe to Supabase real-time updates
+        function subscribeToRealtimeUpdates() {
+            realtimeChannel = supabaseClient
+                .channel('sensor_data_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'sensor_data'
+                    },
+                    (payload) => {
+                        console.log('New data detected in real-time!', payload);
+                        // Update dashboard immediately
+                        updateAllAssessments();
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ Real-time subscription active - dashboard will update instantly!');
+                    }
+                });
+        }
 
         // Initialize Audio Context
         function initAudioContext() {
@@ -320,10 +359,13 @@
             initAudioContext();
         }, { once: true });
 
+        // Initialize Supabase real-time on page load
+        initSupabase();
+
         // Initial load
         updateAllAssessments();
 
-        // Auto-refresh every 30 seconds
+        // Keep the 30-second polling as backup (in case real-time fails)
         setInterval(updateAllAssessments, 30000);
     </script>
 </body>
