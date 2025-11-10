@@ -199,7 +199,7 @@ def assess_environmental_endpoint():
         
         # Format response to match frontend expectations
         response_data = {
-            'risk': env_result.risk_level,
+            'risk': env_result.environmental_risk.lower(),
             'risk_score': env_result.risk_score,
             'triggers': env_result.triggers,
             'sensor_data': {
