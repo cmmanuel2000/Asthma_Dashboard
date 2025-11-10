@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History & Analytics - Asthma Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto;
+        }
+        
+        h1 { 
+            text-align: center; 
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .nav-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .nav-btn {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            margin: 0 10px;
+            color: #667eea;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .chart-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 968px) {
+            .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2em; }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 History & Analytics</h1>
+        
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="window.location.href='index.html'">
+                🏠 Back to Dashboard
+            </button>
+            <button class="nav-btn" onclick="loadData()">
+                🔄 Refresh Data
+            </button>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecords">--</div>
+                <div class="stat-label">Total Records</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="highRiskCount">--</div>
+                <div class="stat-label">High Risk Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgSpO2">--</div>
+                <div class="stat-label">Avg SpO2 (%)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgTemp">--</div>
+                <div class="stat-label">Avg Temp (°C)</div>
+            </div>
+        </div>
+        
+        <!-- Risk Trend Over Time -->
+        <div class="chart-container">
+            <h2 class="chart-title">📈 Risk Level Trend (Last 24 Hours)</h2>
+            <canvas id="riskTrendChart"></canvas>
+        </div>
+        
+        <!-- Grid with two charts -->
+        <div class="grid">
+            <!-- SpO2 Levels -->
+            <div class="chart-container">
+                <h2 class="chart-title">💉 SpO2 Levels Over Time</h2>
+                <canvas id="spo2Chart"></canvas>
+            </div>
+            
+            <!-- Environmental Factors -->
+            <div class="chart-container">
+                <h2 class="chart-title">🌡️ Environmental Factors</h2>
+                <canvas id="environmentalChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Event Distribution -->
+        <div class="chart-container">
+            <h2 class="chart-title">🎯 Event Type Distribution</h2>
+            <canvas id="eventDistributionChart"></canvas>
+        </div>
+        
+        <div class="loading" id="loadingMessage">Loading historical data...</div>
+    </div>
+
+    <script>
+        let charts = {};
+        
+        // Function to load data from Supabase
+        async function loadData() {
+            try {
+                document.getElementById('loadingMessage').style.display = 'block';
+                
+                // In a real implementation, this would fetch from your API
+                // For now, we'll fetch the last 100 records
+                const response = await fetch('/api/history', { method: 'POST' });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('loadingMessage').style.display = 'none';
+                
+                // Update statistics
+                updateStatistics(data);
+                
+                // Create charts
+                createRiskTrendChart(data);
+                createSpO2Chart(data);
+                createEnvironmentalChart(data);
+                createEventDistributionChart(data);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loadingMessage').innerHTML = 
+                    '<span style="color: #e74c3c;">Error loading data. Using demo data...</span>';
+                
+                // Load demo data
+                loadDemoData();
+            }
+        }
+        
+        // Function to load demo data for visualization
+        function loadDemoData() {
+            const now = new Date();
+            const demoData = [];
+            
+            // Generate 50 sample records over the last 24 hours
+            for (let i = 0; i < 50; i++) {
+                const hoursAgo = (50 - i) * 0.5; // Every 30 minutes
+                const timestamp = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+                
+                demoData.push({
+                    created_at: timestamp.toISOString(),
+                    prediction_label: ['normal', 'normal', 'normal', 'cough', 'wheeze'][Math.floor(Math.random() * 5)],
+                    risk_level: ['safe', 'safe', 'safe', 'medium', 'high'][Math.floor(Math.random() * 5)],
+                    spo2: 0.92 + Math.random() * 0.08, // 92-100%
+                    temperature: 20 + Math.random() * 10, // 20-30°C
+                    humidity: 40 + Math.random() * 30, // 40-70%
+                    pm25: 10 + Math.random() * 40, // 10-50 µg/m³
+                });
+            }
+            
+            updateStatistics(demoData);
+            createRiskTrendChart(demoData);
+            createSpO2Chart(demoData);
+            createEnvironmentalChart(demoData);
+            createEventDistributionChart(demoData);
+        }
+        
+        // Update statistics cards
+        function updateStatistics(data) {
+            document.getElementById('totalRecords').textContent = data.length;
+            
+            const highRiskCount = data.filter(d => d.risk_level === 'high').length;
+            document.getElementById('highRiskCount').textContent = highRiskCount;
+            
+            const avgSpO2 = data.reduce((sum, d) => sum + (d.spo2 || 0), 0) / data.length * 100;
+            document.getElementById('avgSpO2').textContent = avgSpO2.toFixed(1);
+            
+            const validTemps = data.filter(d => d.temperature != null);
+            const avgTemp = validTemps.length > 0 
+                ? validTemps.reduce((sum, d) => sum + d.temperature, 0) / validTemps.length 
+                : 0;
+            document.getElementById('avgTemp').textContent = avgTemp.toFixed(1);
+        }
+        
+        // Create Risk Trend Chart
+        function createRiskTrendChart(data) {
+            const ctx = document.getElementById('riskTrendChart').getContext('2d');
+            
+            if (charts.riskTrend) charts.riskTrend.destroy();
+            
+            // Convert risk levels to numeric values
+            const riskValues = data.map(d => {
+                if (d.risk_level === 'high') return 3;
+                if (d.risk_level === 'medium') return 2;
+                return 1;
+            });
+            
+            const labels = data.map(d => new Date(d.created_at).toLocaleTimeString());
+            
+            charts.riskTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Risk Level',
+                        data: riskValues,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 4,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value === 3) return 'High';
+                                    if (value === 2) return 'Medium';
+                                    if (value === 1) return 'Safe';
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create SpO2 Chart
+        function createSpO2Chart(data) {
+            const ctx = document.getElementById('spo2Chart').getContext('2d');
+            
+            if (charts.spo2) charts.spo2.destroy();
+            
+            const labels = data.map(d => new Date(d.created_at).toLocaleTimeString());
+            const spo2Values = data.map(d => (d.spo2 || 0) * 100);
+            
+            charts.spo2 = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'SpO2 (%)',
+                        data: spo2Values,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            min: 85,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: [{
+                                type: 'line',
+                                yMin: 92,
+                                yMax: 92,
+                                borderColor: '#e74c3c',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: {
+                                    content: 'Critical Level',
+                                    enabled: true
+                                }
+                            }]
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create Environmental Chart
+        function createEnvironmentalChart(data) {
+            const ctx = document.getElementById('environmentalChart').getContext('2d');
+            
+            if (charts.environmental) charts.environmental.destroy();
+            
+            const labels = data.map(d => new Date(d.created_at).toLocaleTimeString());
+            
+            charts.environmental = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            data: data.map(d => d.temperature),
+                            borderColor: '#e74c3c',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Humidity (%)',
+                            data: data.map(d => d.humidity),
+                            borderColor: '#3498db',
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'PM2.5 (µg/m³)',
+                            data: data.map(d => d.pm25),
+                            borderColor: '#95a5a6',
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Temperature (°C)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Humidity (%)' },
+                            grid: { drawOnChartArea: false }
+                        },
+                        y2: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'PM2.5' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create Event Distribution Chart (Pie Chart)
+        function createEventDistributionChart(data) {
+            const ctx = document.getElementById('eventDistributionChart').getContext('2d');
+            
+            if (charts.eventDist) charts.eventDist.destroy();
+            
+            // Count event types
+            const eventCounts = {};
+            data.forEach(d => {
+                const label = d.prediction_label || 'unknown';
+                eventCounts[label] = (eventCounts[label] || 0) + 1;
+            });
+            
+            charts.eventDist = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(eventCounts),
+                    datasets: [{
+                        data: Object.values(eventCounts),
+                        backgroundColor: [
+                            '#27ae60',
+                            '#f39c12',
+                            '#e74c3c',
+                            '#3498db',
+                            '#9b59b6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Load data on page load
+        window.onload = () => {
+            loadDemoData(); // For now, load demo data
+        };
+    </script>
+</body>
+</html>

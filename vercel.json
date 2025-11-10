@@ -8,6 +8,10 @@
     {
       "src": "index.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "history.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -18,6 +22,14 @@
     {
       "src": "/api/assess-environmental",
       "dest": "api/index.py"
+    },
+    {
+      "src": "/api/history",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/history.html",
+      "dest": "/history.html"
     },
     {
       "src": "/",

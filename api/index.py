@@ -172,5 +172,35 @@ def assess_environmental_endpoint():
         print("--------------------------", file=sys.stderr)
         return jsonify({"error": "A server error occurred. Check Vercel logs."}), 500
 
+@app.route('/api/history', methods=['POST'])
+def get_history_endpoint():
+    """Fetch historical sensor data for analytics"""
+    try:
+        if not supabase:
+            print("ERROR: Supabase client not initialized", file=sys.stderr)
+            return jsonify({"error": "Database not available"}), 500
+            
+        print("\nReceived request to /api/history")
+        
+        # Fetch last 100 records
+        response = supabase.table("sensor_data")\
+            .select("created_at, prediction_label, risk_level, spo2, temperature, humidity, pm25")\
+            .order("created_at", desc=True)\
+            .limit(100)\
+            .execute()
+        
+        if not response.data:
+            return jsonify([]), 200
+        
+        print(f"-> Retrieved {len(response.data)} historical records")
+        
+        return jsonify(response.data), 200
+        
+    except Exception:
+        print("--- RUNTIME ERROR CAUGHT ---", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print("--------------------------", file=sys.stderr)
+        return jsonify({"error": "A server error occurred. Check Vercel logs."}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
