@@ -122,9 +122,34 @@ def assess_risk_endpoint():
         raw_inputs = {'spo2': spo2_value, 'bpm': bpm, 'audio_risk': audio_risk}
         save_assessment_to_supabase(fusion_result, raw_inputs)
         
-        # Include raw sensor data in response for debugging
-        response_data = asdict(fusion_result)
-        response_data['sensor_inputs'] = raw_inputs
+        # Format response to match frontend expectations
+        prediction_label = sensor_data.get("raw_data", {}).get("prediction_label", "normal")
+        audio_detection = prediction_label.capitalize()
+        
+        # Extract triggers from reasoning
+        triggers = []
+        if fusion_result.spo2_was_critical:
+            triggers.append(f"Critical SpO2 level: {spo2_value:.1f}%")
+        if audio_risk == 2:
+            triggers.append("Cough detected")
+        elif audio_risk == 1:
+            triggers.append("Wheeze detected")
+        if bpm > 40:
+            triggers.append(f"Elevated breathing rate: {bpm:.0f} bpm")
+        
+        response_data = {
+            'risk': fusion_result.final_risk,
+            'risk_score': fusion_result.risk_score,
+            'confidence': fusion_result.confidence,
+            'reasoning': fusion_result.reasoning,
+            'triggers': triggers,
+            'sensor_data': {
+                'spo2': spo2_value,
+                'heart_rate': sensor_data.get("raw_data", {}).get("heart_rate"),
+                'breathing_rate': bpm,
+                'audio_detection': audio_detection
+            }
+        }
         
         return jsonify(response_data), 200
     except Exception:
@@ -161,9 +186,17 @@ def assess_environmental_endpoint():
         env_result = environmental_fusion(temperature, humidity, pm25)
         env_inputs = {'temperature': temperature, 'humidity': humidity, 'pm25': pm25}
         
-        # Include environmental data in response
-        response_data = asdict(env_result)
-        response_data['environmental_inputs'] = env_inputs
+        # Format response to match frontend expectations
+        response_data = {
+            'risk': env_result.risk_level,
+            'risk_score': env_result.risk_score,
+            'triggers': env_result.triggers,
+            'sensor_data': {
+                'temperature': temperature,
+                'humidity': humidity,
+                'pm25': pm25
+            }
+        }
         
         return jsonify(response_data), 200
     except Exception:
