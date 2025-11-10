@@ -6,66 +6,245 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asthma Risk Dashboard</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto;
+        }
+        
+        h1 { 
+            text-align: center; 
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
         .dashboard { 
-            background: #fff; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            padding: 20px; 
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
             margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        h1 { text-align: center; color: #2c3e50; }
-        h2 { font-size: 1.3em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-        .metric { margin-bottom: 15px; }
-        .metric strong { display: inline-block; width: 150px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 768px) {
+        
+        .dashboard:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+        
+        h2 { 
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h3 {
+            font-size: 1.1em;
+            margin: 20px 0 15px 0;
+            color: #34495e;
+            font-weight: 600;
+        }
+        
+        .metric { 
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+        
+        .metric:hover {
+            background: #e9ecef;
+        }
+        
+        .metric strong { 
+            display: inline-block;
+            width: 180px;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .metric span {
+            flex: 1;
+            color: #212529;
+            font-weight: 500;
+        }
+        
+        .grid { 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 968px) {
             .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2em; }
         }
-        .risk-high { color: #e74c3c; font-weight: bold; }
-        .risk-medium { color: #f39c12; font-weight: bold; }
-        .risk-safe { color: #27ae60; font-weight: bold; }
+        
+        .risk-high { 
+            color: #e74c3c !important;
+            font-weight: bold !important;
+            font-size: 1.1em;
+            padding: 4px 12px;
+            background: #ffebee;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .risk-medium { 
+            color: #f39c12 !important;
+            font-weight: bold !important;
+            font-size: 1.1em;
+            padding: 4px 12px;
+            background: #fff3e0;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .risk-safe { 
+            color: #27ae60 !important;
+            font-weight: bold !important;
+            font-size: 1.1em;
+            padding: 4px 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .last-update {
+            text-align: center;
+            color: white;
+            font-size: 0.9em;
+            margin-top: 20px;
+            opacity: 0.9;
+        }
+        
+        .icon {
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🫁 Asthma Risk Dashboard</h1>
+        <h1><span class="icon">🫁</span> Asthma Risk Dashboard <span class="icon">📊</span></h1>
         
         <div class="grid">
             <!-- Physiological Assessment -->
             <div class="dashboard">
-                <h2>Physiological Assessment</h2>
-                <div class="metric"><strong>Final Risk:</strong> <span id="finalRisk">--</span></div>
-                <div class="metric"><strong>Risk Score:</strong> <span id="riskScore">--</span></div>
-                <div class="metric"><strong>Confidence:</strong> <span id="confidence">--</span></div>
-                <div class="metric"><strong>Reasoning:</strong> <span id="reasoning">--</span></div>
+                <h2><span class="icon">❤️</span> Physiological Assessment</h2>
+                <div class="metric">
+                    <strong>Final Risk:</strong>
+                    <span id="finalRisk" class="loading">Loading...</span>
+                </div>
+                <div class="metric">
+                    <strong>Risk Score:</strong>
+                    <span id="riskScore" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Confidence:</strong>
+                    <span id="confidence" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Reasoning:</strong>
+                    <span id="reasoning" class="loading">Fetching data...</span>
+                </div>
                 
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                <hr>
                 
-                <h3 style="font-size: 1.1em; margin-bottom: 10px;">Sensor Data</h3>
-                <div class="metric"><strong>SpO2:</strong> <span id="spo2">--</span></div>
-                <div class="metric"><strong>Breathing Rate:</strong> <span id="breathingRate">--</span></div>
-                <div class="metric"><strong>Audio Risk:</strong> <span id="audioRisk">--</span></div>
+                <h3>📈 Sensor Readings</h3>
+                <div class="metric">
+                    <strong>SpO2 Level:</strong>
+                    <span id="spo2" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Breathing Rate:</strong>
+                    <span id="breathingRate" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Audio Detection:</strong>
+                    <span id="audioRisk" class="loading">--</span>
+                </div>
             </div>
             
             <!-- Environmental Assessment -->
             <div class="dashboard">
-                <h2>Environmental Assessment</h2>
-                <div class="metric"><strong>Environmental Risk:</strong> <span id="envRisk">--</span></div>
-                <div class="metric"><strong>Risk Score:</strong> <span id="envRiskScore">--</span></div>
-                <div class="metric"><strong>Confidence:</strong> <span id="envConfidence">--</span></div>
-                <div class="metric"><strong>Triggers:</strong> <span id="envTriggers">--</span></div>
-                <div class="metric"><strong>Reasoning:</strong> <span id="envReasoning">--</span></div>
+                <h2><span class="icon">🌡️</span> Environmental Assessment</h2>
+                <div class="metric">
+                    <strong>Environmental Risk:</strong>
+                    <span id="envRisk" class="loading">Loading...</span>
+                </div>
+                <div class="metric">
+                    <strong>Risk Score:</strong>
+                    <span id="envRiskScore" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Confidence:</strong>
+                    <span id="envConfidence" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Active Triggers:</strong>
+                    <span id="envTriggers" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Analysis:</strong>
+                    <span id="envReasoning" class="loading">Fetching data...</span>
+                </div>
                 
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                <hr>
                 
-                <h3 style="font-size: 1.1em; margin-bottom: 10px;">Environmental Data</h3>
-                <div class="metric"><strong>Temperature:</strong> <span id="temperature">--</span></div>
-                <div class="metric"><strong>Humidity:</strong> <span id="humidity">--</span></div>
-                <div class="metric"><strong>PM2.5:</strong> <span id="pm25">--</span></div>
+                <h3>🌍 Environmental Data</h3>
+                <div class="metric">
+                    <strong>Temperature:</strong>
+                    <span id="temperature" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Humidity:</strong>
+                    <span id="humidity" class="loading">--</span>
+                </div>
+                <div class="metric">
+                    <strong>Air Quality (PM2.5):</strong>
+                    <span id="pm25" class="loading">--</span>
+                </div>
             </div>
+        </div>
+        
+        <div class="last-update">
+            Last updated: <span id="lastUpdate">Never</span>
         </div>
     </div>
 
@@ -172,6 +351,10 @@
         function getAllAssessments() {
             getPhysiologicalAssessment();
             getEnvironmentalAssessment();
+            
+            // Update last update time
+            const now = new Date();
+            document.getElementById('lastUpdate').innerText = now.toLocaleTimeString();
         }
 
         // Run immediately when the page loads
