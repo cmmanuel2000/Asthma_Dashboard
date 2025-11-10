@@ -21,6 +21,13 @@
         <div class="metric"><strong>Risk Score:</strong> <span id="riskScore">--</span></div>
         <div class="metric"><strong>Confidence:</strong> <span id="confidence">--</span></div>
         <div class="metric"><strong>Reasoning:</strong> <span id="reasoning">--</span></div>
+        
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <h2 style="font-size: 1.2em; margin-bottom: 10px;">Sensor Data</h2>
+        <div class="metric"><strong>SpO2:</strong> <span id="spo2">--</span></div>
+        <div class="metric"><strong>Breathing Rate:</strong> <span id="breathingRate">--</span></div>
+        <div class="metric"><strong>Audio Risk:</strong> <span id="audioRisk">--</span></div>
     </div>
 
     <script>
@@ -48,6 +55,15 @@
                 document.getElementById('riskScore').innerText = data.risk_score.toFixed(2);
                 document.getElementById('confidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
                 document.getElementById('reasoning').innerText = data.reasoning;
+
+                // --- UPDATE SENSOR DATA ---
+                if (data.sensor_inputs) {
+                    document.getElementById('spo2').innerText = `${data.sensor_inputs.spo2.toFixed(1)}%`;
+                    document.getElementById('breathingRate').innerText = `${data.sensor_inputs.bpm.toFixed(1)} bpm`;
+                    
+                    const audioRiskLevels = ['Safe (0)', 'Medium (1)', 'High (2)'];
+                    document.getElementById('audioRisk').innerText = audioRiskLevels[data.sensor_inputs.audio_risk] || data.sensor_inputs.audio_risk;
+                }
 
             } catch (error) {
                 console.error('Failed to fetch risk assessment:', error);
