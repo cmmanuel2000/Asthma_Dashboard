@@ -171,17 +171,28 @@ def assess_environmental_endpoint():
         humidity = sensor_data.get("humidity")
         pm25 = sensor_data.get("pm25")
         
+        print(f"-> Environmental data - Temp: {temperature}, Humidity: {humidity}, PM2.5: {pm25}")
+        
         # Check if environmental data is available
         if all(v is None for v in [temperature, humidity, pm25]):
             return jsonify({
                 "error": "No environmental data available",
-                "message": "Temperature, humidity, and PM2.5 data are all missing"
-            }), 404
+                "message": "Temperature, humidity, and PM2.5 data are all missing",
+                "risk": "safe",
+                "triggers": ["Environmental data not available"],
+                "sensor_data": {
+                    "temperature": None,
+                    "humidity": None,
+                    "pm25": None
+                }
+            }), 200  # Return 200 with safe status instead of 404
         
         # Use default values for missing data
         temperature = temperature if temperature is not None else 22.0  # Default comfortable temp
         humidity = humidity if humidity is not None else 50.0  # Default comfortable humidity
         pm25 = pm25 if pm25 is not None else 10.0  # Default good air quality
+        
+        print(f"-> Using values - Temp: {temperature}, Humidity: {humidity}, PM2.5: {pm25}")
         
         env_result = environmental_fusion(temperature, humidity, pm25)
         env_inputs = {'temperature': temperature, 'humidity': humidity, 'pm25': pm25}
