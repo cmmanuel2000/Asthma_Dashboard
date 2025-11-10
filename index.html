@@ -342,38 +342,40 @@
             if (!notificationsEnabled) return;
             
             try {
+                // Create a loud, attention-grabbing alarm sound
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Function to create a single beep
-                function createBeep(startTime) {
+                function beep(startTime, frequency, duration) {
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
                     
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     
-                    // Configure sound (urgent beep)
-                    oscillator.frequency.value = 880; // A5 note - higher pitch for urgency
-                    oscillator.type = 'square'; // Square wave for more harsh/urgent sound
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'square';
                     
-                    gainNode.gain.setValueAtTime(0.5, startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+                    // Louder volume
+                    gainNode.gain.setValueAtTime(0.7, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
                     
                     oscillator.start(startTime);
-                    oscillator.stop(startTime + 0.3);
+                    oscillator.stop(startTime + duration);
                 }
                 
-                // Create three beeps with spacing
                 const now = audioContext.currentTime;
-                createBeep(now);
-                createBeep(now + 0.4);
-                createBeep(now + 0.8);
                 
-                console.log('Alert sound played');
+                // Create an alarm pattern: high-low-high beeps
+                beep(now, 1000, 0.15);           // High beep
+                beep(now + 0.2, 800, 0.15);      // Low beep
+                beep(now + 0.4, 1000, 0.15);     // High beep
+                beep(now + 0.6, 800, 0.15);      // Low beep
+                beep(now + 0.8, 1000, 0.3);      // Long high beep
+                
+                console.log('✓ Alert sound played successfully');
             } catch (error) {
-                console.error('Error playing alert sound:', error);
-                // Fallback: try to use system beep
-                console.log('\x07'); // ASCII bell character
+                console.error('✗ Error playing alert sound:', error);
+                alert('⚠️ HIGH RISK ALERT! (Sound failed to play)');
             }
         }
         
