@@ -156,12 +156,92 @@
         .icon {
             font-size: 1.2em;
         }
+        
+        .notification-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .notification-btn {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notification-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .notification-btn.enabled {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .notification-btn.disabled {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .alert-banner {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            animation: slideDown 0.5s ease;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        .alert-banner.show {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1><span class="icon">🫁</span> Asthma Risk Dashboard <span class="icon">📊</span></h1>
+        
+        <!-- Alert Banner -->
+        <div id="alertBanner" class="alert-banner">
+            🚨 HIGH RISK ALERT DETECTED! 🚨
+        </div>
+        
+        <!-- Notification Controls -->
+        <div class="notification-controls">
+            <button id="notificationBtn" class="notification-btn enabled" onclick="toggleNotifications()">
+                <span id="notificationIcon">🔔</span>
+                <span id="notificationText">Notifications Enabled</span>
+            </button>
+        </div>
         
         <div class="grid">
             <!-- Physiological Assessment -->
@@ -249,6 +329,134 @@
     </div>
 
     <script>
+        // Notification state
+        let notificationsEnabled = true;
+        let lastAlertTime = 0;
+        const ALERT_COOLDOWN = 60000; // 1 minute cooldown between alerts
+        
+        // Create audio context for alert sound
+        let audioContext;
+        let hasInteracted = false;
+        
+        // Initialize audio context on first user interaction
+        document.addEventListener('click', function initAudio() {
+            if (!hasInteracted) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                hasInteracted = true;
+            }
+        }, { once: false });
+        
+        // Function to play alert sound
+        function playAlertSound() {
+            if (!audioContext || !notificationsEnabled) return;
+            
+            try {
+                // Create oscillator for beep sound
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Configure sound (urgent beep)
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                // Play three beeps
+                setTimeout(() => {
+                    const osc2 = audioContext.createOscillator();
+                    const gain2 = audioContext.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioContext.destination);
+                    osc2.frequency.value = 800;
+                    osc2.type = 'sine';
+                    gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    osc2.start(audioContext.currentTime);
+                    osc2.stop(audioContext.currentTime + 0.5);
+                }, 200);
+                
+                setTimeout(() => {
+                    const osc3 = audioContext.createOscillator();
+                    const gain3 = audioContext.createGain();
+                    osc3.connect(gain3);
+                    gain3.connect(audioContext.destination);
+                    osc3.frequency.value = 800;
+                    osc3.type = 'sine';
+                    gain3.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    osc3.start(audioContext.currentTime);
+                    osc3.stop(audioContext.currentTime + 0.5);
+                }, 400);
+            } catch (error) {
+                console.error('Error playing alert sound:', error);
+            }
+        }
+        
+        // Function to show alert banner
+        function showAlert(message) {
+            const banner = document.getElementById('alertBanner');
+            banner.textContent = message;
+            banner.classList.add('show');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                banner.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Function to check for high risk and trigger alert
+        function checkAndAlert(riskLevel, riskType) {
+            if (!notificationsEnabled) return;
+            
+            const now = Date.now();
+            if (riskLevel === 'HIGH' && (now - lastAlertTime > ALERT_COOLDOWN)) {
+                lastAlertTime = now;
+                playAlertSound();
+                showAlert(`🚨 HIGH ${riskType} RISK DETECTED! 🚨`);
+                
+                // Browser notification (if permitted)
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Asthma Risk Alert', {
+                        body: `High ${riskType} risk detected! Please check the dashboard.`,
+                        icon: '🫁',
+                        tag: 'asthma-alert'
+                    });
+                }
+            }
+        }
+        
+        // Toggle notifications
+        function toggleNotifications() {
+            notificationsEnabled = !notificationsEnabled;
+            const btn = document.getElementById('notificationBtn');
+            const icon = document.getElementById('notificationIcon');
+            const text = document.getElementById('notificationText');
+            
+            if (notificationsEnabled) {
+                btn.classList.remove('disabled');
+                btn.classList.add('enabled');
+                icon.textContent = '🔔';
+                text.textContent = 'Notifications Enabled';
+                
+                // Request notification permission
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            } else {
+                btn.classList.remove('enabled');
+                btn.classList.add('disabled');
+                icon.textContent = '🔕';
+                text.textContent = 'Notifications Disabled';
+            }
+        }
+        
         // Function to apply risk color styling
         function getRiskClass(risk) {
             if (!risk) return '';
@@ -280,6 +488,9 @@
                 const finalRiskEl = document.getElementById('finalRisk');
                 finalRiskEl.innerText = data.final_risk;
                 finalRiskEl.className = getRiskClass(data.final_risk);
+                
+                // Check for high risk and trigger alert
+                checkAndAlert(data.final_risk, 'PHYSIOLOGICAL');
                 
                 document.getElementById('riskScore').innerText = data.risk_score.toFixed(2);
                 document.getElementById('confidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
@@ -322,6 +533,9 @@
                 const envRiskEl = document.getElementById('envRisk');
                 envRiskEl.innerText = data.environmental_risk;
                 envRiskEl.className = getRiskClass(data.environmental_risk);
+                
+                // Check for high risk and trigger alert
+                checkAndAlert(data.environmental_risk, 'ENVIRONMENTAL');
                 
                 document.getElementById('envRiskScore').innerText = data.risk_score.toFixed(2);
                 document.getElementById('envConfidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
