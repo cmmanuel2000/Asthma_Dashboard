@@ -338,12 +338,19 @@
         const ALERT_COOLDOWN = 60000; // 1 minute cooldown between alerts
         
         // Function to play alert sound using multiple beeps
-        function playAlertSound() {
+        async function playAlertSound() {
             if (!notificationsEnabled) return;
             
             try {
                 // Create a loud, attention-grabbing alarm sound
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // IMPORTANT: Resume the audio context if it's suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                console.log('AudioContext state:', audioContext.state);
                 
                 function beep(startTime, frequency, duration) {
                     const oscillator = audioContext.createOscillator();
@@ -372,10 +379,10 @@
                 beep(now + 0.6, 800, 0.15);      // Low beep
                 beep(now + 0.8, 1000, 0.3);      // Long high beep
                 
-                console.log('✓ Alert sound played successfully');
+                console.log('✓ Alert sound triggered - Check your volume!');
             } catch (error) {
                 console.error('✗ Error playing alert sound:', error);
-                alert('⚠️ HIGH RISK ALERT! (Sound failed to play)');
+                alert('⚠️ HIGH RISK ALERT! (Sound failed to play: ' + error.message + ')');
             }
         }
         
