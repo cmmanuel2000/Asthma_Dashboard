@@ -8,6 +8,7 @@ try:
     from flask import Flask, request, jsonify
     # CORRECTED IMPORT: Look for fusion_logic in the same (api) directory
     from .fusion_logic import hybrid_fusion, FusionOutput
+    from .environmental_fusion import environmental_fusion, EnvironmentalOutput
     from dataclasses import asdict
     import time
     from supabase import create_client, Client
@@ -38,7 +39,7 @@ def get_latest_sensor_data_from_supabase():
         print("-> Fetching latest data from Supabase...")
         # Get the most recent record ordered by created_at
         response = supabase.table("sensor_data")\
-            .select("id, device_id, created_at, heart_rate, spo2, accel_mag, prediction_label, risk_level")\
+            .select("*")\
             .order("created_at", desc=True)\
             .limit(1)\
             .execute()
@@ -73,6 +74,9 @@ def get_latest_sensor_data_from_supabase():
             "audio_risk_level": audio_risk_level,
             "spo2_percent": spo2_percent,
             "breathing_rate_bpm": breathing_rate_bpm,
+            "temperature": latest_record.get("temperature"),
+            "humidity": latest_record.get("humidity"),
+            "pm25": latest_record.get("pm25"),
             "raw_data": latest_record  # Include original data for reference
         }
         
@@ -121,6 +125,45 @@ def assess_risk_endpoint():
         # Include raw sensor data in response for debugging
         response_data = asdict(fusion_result)
         response_data['sensor_inputs'] = raw_inputs
+        
+        return jsonify(response_data), 200
+    except Exception:
+        print("--- RUNTIME ERROR CAUGHT ---", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print("--------------------------", file=sys.stderr)
+        return jsonify({"error": "A server error occurred. Check Vercel logs."}), 500
+
+@app.route('/api/assess-environmental', methods=['POST'])
+def assess_environmental_endpoint():
+    try:
+        print("\nReceived new request to /api/assess-environmental")
+        sensor_data = get_latest_sensor_data_from_supabase()
+        
+        if sensor_data is None:
+            return jsonify({"error": "No sensor data available in database"}), 404
+        
+        temperature = sensor_data.get("temperature")
+        humidity = sensor_data.get("humidity")
+        pm25 = sensor_data.get("pm25")
+        
+        # Check if environmental data is available
+        if all(v is None for v in [temperature, humidity, pm25]):
+            return jsonify({
+                "error": "No environmental data available",
+                "message": "Temperature, humidity, and PM2.5 data are all missing"
+            }), 404
+        
+        # Use default values for missing data
+        temperature = temperature if temperature is not None else 22.0  # Default comfortable temp
+        humidity = humidity if humidity is not None else 50.0  # Default comfortable humidity
+        pm25 = pm25 if pm25 is not None else 10.0  # Default good air quality
+        
+        env_result = environmental_fusion(temperature, humidity, pm25)
+        env_inputs = {'temperature': temperature, 'humidity': humidity, 'pm25': pm25}
+        
+        # Include environmental data in response
+        response_data = asdict(env_result)
+        response_data['environmental_inputs'] = env_inputs
         
         return jsonify(response_data), 200
     except Exception:

@@ -16,6 +16,10 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/api/assess-environmental",
+      "dest": "api/index.py"
+    },
+    {
       "src": "/",
       "dest": "/index.html"
     }

@@ -7,38 +7,85 @@
     <title>Asthma Risk Dashboard</title>
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; color: #333; }
-        .dashboard { max-width: 600px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; }
+        .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        .dashboard { 
+            background: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            padding: 20px; 
+            margin-bottom: 20px;
+        }
+        h1 { text-align: center; color: #2c3e50; }
+        h2 { font-size: 1.3em; margin-bottom: 15px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
         .metric { margin-bottom: 15px; }
-        .metric strong { display: inline-block; width: 120px; }
+        .metric strong { display: inline-block; width: 150px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .risk-high { color: #e74c3c; font-weight: bold; }
+        .risk-medium { color: #f39c12; font-weight: bold; }
+        .risk-safe { color: #27ae60; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="dashboard">
-        <h1>Live Risk Assessment</h1>
-        <div class="metric"><strong>Final Risk:</strong> <span id="finalRisk">--</span></div>
-        <div class="metric"><strong>Risk Score:</strong> <span id="riskScore">--</span></div>
-        <div class="metric"><strong>Confidence:</strong> <span id="confidence">--</span></div>
-        <div class="metric"><strong>Reasoning:</strong> <span id="reasoning">--</span></div>
+    <div class="container">
+        <h1>🫁 Asthma Risk Dashboard</h1>
         
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-        
-        <h2 style="font-size: 1.2em; margin-bottom: 10px;">Sensor Data</h2>
-        <div class="metric"><strong>SpO2:</strong> <span id="spo2">--</span></div>
-        <div class="metric"><strong>Breathing Rate:</strong> <span id="breathingRate">--</span></div>
-        <div class="metric"><strong>Audio Risk:</strong> <span id="audioRisk">--</span></div>
+        <div class="grid">
+            <!-- Physiological Assessment -->
+            <div class="dashboard">
+                <h2>Physiological Assessment</h2>
+                <div class="metric"><strong>Final Risk:</strong> <span id="finalRisk">--</span></div>
+                <div class="metric"><strong>Risk Score:</strong> <span id="riskScore">--</span></div>
+                <div class="metric"><strong>Confidence:</strong> <span id="confidence">--</span></div>
+                <div class="metric"><strong>Reasoning:</strong> <span id="reasoning">--</span></div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                
+                <h3 style="font-size: 1.1em; margin-bottom: 10px;">Sensor Data</h3>
+                <div class="metric"><strong>SpO2:</strong> <span id="spo2">--</span></div>
+                <div class="metric"><strong>Breathing Rate:</strong> <span id="breathingRate">--</span></div>
+                <div class="metric"><strong>Audio Risk:</strong> <span id="audioRisk">--</span></div>
+            </div>
+            
+            <!-- Environmental Assessment -->
+            <div class="dashboard">
+                <h2>Environmental Assessment</h2>
+                <div class="metric"><strong>Environmental Risk:</strong> <span id="envRisk">--</span></div>
+                <div class="metric"><strong>Risk Score:</strong> <span id="envRiskScore">--</span></div>
+                <div class="metric"><strong>Confidence:</strong> <span id="envConfidence">--</span></div>
+                <div class="metric"><strong>Triggers:</strong> <span id="envTriggers">--</span></div>
+                <div class="metric"><strong>Reasoning:</strong> <span id="envReasoning">--</span></div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                
+                <h3 style="font-size: 1.1em; margin-bottom: 10px;">Environmental Data</h3>
+                <div class="metric"><strong>Temperature:</strong> <span id="temperature">--</span></div>
+                <div class="metric"><strong>Humidity:</strong> <span id="humidity">--</span></div>
+                <div class="metric"><strong>PM2.5:</strong> <span id="pm25">--</span></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // This function calls your backend API
-        async function getRiskAssessment() {
-            // The URL path is just /api/assess-risk because the frontend and backend
-            // will be on the same domain once deployed to Vercel.
+        // Function to apply risk color styling
+        function getRiskClass(risk) {
+            if (!risk) return '';
+            const riskLower = risk.toLowerCase();
+            if (riskLower === 'high') return 'risk-high';
+            if (riskLower === 'medium') return 'risk-medium';
+            if (riskLower === 'safe') return 'risk-safe';
+            return '';
+        }
+
+        // Fetch physiological risk assessment
+        async function getPhysiologicalAssessment() {
             const apiUrl = '/api/assess-risk';
 
             try {
-                console.log("Fetching new assessment...");
+                console.log("Fetching physiological assessment...");
                 const response = await fetch(apiUrl, { method: 'POST' });
 
                 if (!response.ok) {
@@ -48,15 +95,18 @@
                 }
 
                 const data = await response.json();
-                console.log('Received data:', data);
+                console.log('Received physiological data:', data);
 
-                // --- UPDATE YOUR DASHBOARD HERE ---
-                document.getElementById('finalRisk').innerText = data.final_risk;
+                // Update risk assessment
+                const finalRiskEl = document.getElementById('finalRisk');
+                finalRiskEl.innerText = data.final_risk;
+                finalRiskEl.className = getRiskClass(data.final_risk);
+                
                 document.getElementById('riskScore').innerText = data.risk_score.toFixed(2);
                 document.getElementById('confidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
                 document.getElementById('reasoning').innerText = data.reasoning;
 
-                // --- UPDATE SENSOR DATA ---
+                // Update sensor data
                 if (data.sensor_inputs) {
                     document.getElementById('spo2').innerText = `${data.sensor_inputs.spo2.toFixed(1)}%`;
                     document.getElementById('breathingRate').innerText = `${data.sensor_inputs.bpm.toFixed(1)} bpm`;
@@ -66,17 +116,69 @@
                 }
 
             } catch (error) {
-                console.error('Failed to fetch risk assessment:', error);
+                console.error('Failed to fetch physiological assessment:', error);
                 document.getElementById('reasoning').innerText = "Failed to connect to the API.";
             }
         }
 
-        // --- Main Execution ---
-        // Run the function once immediately when the page loads
-        getRiskAssessment();
+        // Fetch environmental assessment
+        async function getEnvironmentalAssessment() {
+            const apiUrl = '/api/assess-environmental';
 
-        // Then, set it to run automatically every 30 seconds (30000 milliseconds)
-        setInterval(getRiskAssessment, 30000);
+            try {
+                console.log("Fetching environmental assessment...");
+                const response = await fetch(apiUrl, { method: 'POST' });
+
+                if (!response.ok) {
+                    console.error('Environmental API Error:', response.status);
+                    const errorData = await response.json();
+                    document.getElementById('envReasoning').innerText = errorData.message || `Error: ${response.status}`;
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('Received environmental data:', data);
+
+                // Update environmental risk assessment
+                const envRiskEl = document.getElementById('envRisk');
+                envRiskEl.innerText = data.environmental_risk;
+                envRiskEl.className = getRiskClass(data.environmental_risk);
+                
+                document.getElementById('envRiskScore').innerText = data.risk_score.toFixed(2);
+                document.getElementById('envConfidence').innerText = `${(data.confidence * 100).toFixed(0)}%`;
+                document.getElementById('envReasoning').innerText = data.reasoning;
+                
+                // Update triggers
+                if (data.triggers && data.triggers.length > 0) {
+                    document.getElementById('envTriggers').innerText = data.triggers.join(', ');
+                } else {
+                    document.getElementById('envTriggers').innerText = 'None';
+                }
+
+                // Update environmental sensor data
+                if (data.environmental_inputs) {
+                    document.getElementById('temperature').innerText = `${data.environmental_inputs.temperature.toFixed(1)}°C`;
+                    document.getElementById('humidity').innerText = `${data.environmental_inputs.humidity.toFixed(1)}%`;
+                    document.getElementById('pm25').innerText = `${data.environmental_inputs.pm25.toFixed(1)} µg/m³`;
+                }
+
+            } catch (error) {
+                console.error('Failed to fetch environmental assessment:', error);
+                document.getElementById('envReasoning').innerText = "Failed to connect to the API.";
+            }
+        }
+
+        // Fetch all assessments
+        function getAllAssessments() {
+            getPhysiologicalAssessment();
+            getEnvironmentalAssessment();
+        }
+
+        // Run immediately when the page loads
+        getAllAssessments();
+
+        // Then, set it to run automatically every 30 seconds
+        setInterval(getAllAssessments, 30000);
     </script>
 </body>
 </html>
