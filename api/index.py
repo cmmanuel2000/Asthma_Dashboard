@@ -38,7 +38,7 @@ def get_latest_sensor_data_from_supabase():
             
         print("-> Fetching latest data from Supabase...")
         # Get the most recent record ordered by created_at
-        response = supabase.table("sensor_data")\
+        response = supabase.table("s3_sensor_data")\
             .select("*")\
             .order("created_at", desc=True)\
             .limit(1)\
@@ -227,7 +227,7 @@ def get_history_endpoint():
         print("\nReceived request to /api/history")
         
         # Fetch last 100 records
-        response = supabase.table("sensor_data")\
+        response = supabase.table("s3_sensor_data")\
             .select("created_at, prediction_label, risk_level, spo2, temperature, humidity, pm25")\
             .order("created_at", desc=True)\
             .limit(100)\
