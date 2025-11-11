@@ -65,22 +65,27 @@ def get_latest_sensor_data_from_supabase():
         spo2_raw = latest_record.get("spo2", 0)
         spo2_percent = spo2_raw * 100 if spo2_raw and spo2_raw < 1 else (spo2_raw if spo2_raw else 95.0)
         
+        # Convert heart_rate if it's in decimal format
+        heart_rate_raw = latest_record.get("heart_rate", 0)
+        heart_rate = heart_rate_raw * 100 if heart_rate_raw and heart_rate_raw < 2 else (heart_rate_raw if heart_rate_raw else 75)
+        
         # Calculate breathing rate from accel_mag (this is a simplified estimation)
         # You may need to adjust this based on your actual sensor logic
         accel_mag = latest_record.get("accel_mag", 0)
-        breathing_rate_bpm = 30 + (accel_mag * 5) if accel_mag else 30
+        breathing_rate_bpm = accel_mag * 100 if accel_mag and accel_mag < 2 else (accel_mag if accel_mag else 30)
         
         sensor_data = {
             "audio_risk_level": audio_risk_level,
             "spo2_percent": spo2_percent,
             "breathing_rate_bpm": breathing_rate_bpm,
+            "heart_rate": heart_rate,
             "temperature": latest_record.get("temperature"),
             "humidity": latest_record.get("humidity"),
             "pm25": latest_record.get("pm25"),
             "raw_data": latest_record  # Include original data for reference
         }
         
-        print(f"-> Processed data - Audio risk: {audio_risk_level}, SpO2: {spo2_percent:.1f}%, Breathing: {breathing_rate_bpm:.1f} bpm")
+        print(f"-> Processed data - Audio risk: {audio_risk_level}, SpO2: {spo2_percent:.1f}%, Heart Rate: {heart_rate:.1f} bpm, Breathing: {breathing_rate_bpm:.1f} bpm")
         
         return sensor_data
     except Exception as e:
@@ -144,9 +149,9 @@ def assess_risk_endpoint():
             'reasoning': fusion_result.reasoning,
             'triggers': triggers,
             'sensor_data': {
-                'spo2': spo2_value,
-                'heart_rate': sensor_data.get("raw_data", {}).get("heart_rate"),
-                'breathing_rate': bpm,
+                'spo2': round(spo2_value, 1),
+                'heart_rate': round(sensor_data.get("heart_rate", 0), 1),
+                'breathing_rate': round(bpm, 1),
                 'audio_detection': audio_detection
             }
         }
