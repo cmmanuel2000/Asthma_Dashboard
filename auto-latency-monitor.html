@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Latency Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">🔄 Auto Latency Monitor (Local)</h1>
+        <p class="text-gray-600 mb-4">Paste test_10_records.sql in Supabase - tracks real-time notification speed!</p>
+        <p class="text-sm text-yellow-600 mb-6">⚡ Local mode: Only tests Supabase real-time (not Vercel API)</p>
+        
+        <!-- Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm text-gray-600 mb-1">Status</div>
+                    <div id="status" class="text-2xl font-bold text-green-600">🟢 Listening for new data...</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600 mb-1">Tests Detected</div>
+                    <div id="testCount" class="text-4xl font-bold text-blue-600">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Avg Latency</div>
+                <div id="avgRealtime" class="text-2xl font-bold text-blue-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Min Latency</div>
+                <div id="minLatency" class="text-2xl font-bold text-green-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Max Latency</div>
+                <div id="maxLatency" class="text-2xl font-bold text-orange-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Tests Completed</div>
+                <div id="successRate" class="text-2xl font-bold text-purple-600">0</div>
+            </div>
+        </div>
+
+        <!-- Live Dashboard Preview -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b">� Latest Insert Details</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <div class="text-sm text-gray-600">Device ID</div>
+                    <div class="text-lg font-medium" id="liveDevice">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600">SpO2</div>
+                    <div class="text-lg font-medium" id="liveSpO2">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600">Heart Rate</div>
+                    <div class="text-lg font-medium" id="liveHeart">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600">Risk Level</div>
+                    <div class="text-lg font-medium" id="liveRisk">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Log -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">📋 Live Test Results</h2>
+                <button onclick="clearResults()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">
+                    🗑️ Clear
+                </button>
+            </div>
+            <div id="results" class="space-y-2 max-h-96 overflow-y-auto font-mono text-sm">
+                <div class="text-gray-500 text-center py-8">
+                    Waiting for data... Paste test_10_records.sql into Supabase SQL Editor
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .risk-badge { transition: all 0.3s ease; }
+        .risk-safe { background-color: #dcfce7; color: #166534; }
+        .risk-medium { background-color: #fef3c7; color: #92400e; }
+        .risk-high { background-color: #fee2e2; color: #991b1b; }
+        .risk-unknown { background-color: #f3f4f6; color: #4b5563; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .testing { animation: pulse 1s ease-in-out infinite; }
+    </style>
+
+    <script>
+        const SUPABASE_URL = 'https://ogapdrgcwmzecbwwrmre.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10';
+        const API_BASE = window.location.origin;
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let testResults = [];
+        let testCount = 0;
+        let processingQueue = [];
+        let isProcessing = false;
+
+        // Subscribe to real-time inserts
+        async function initializeMonitor() {
+            addLog('✅ Auto latency monitor initialized', 'success');
+            addLog('� Supabase URL: ' + SUPABASE_URL, 'info');
+            addLog('🔑 Anon Key: ' + SUPABASE_ANON_KEY.substring(0, 20) + '...', 'info');
+            addLog('�🔌 Setting up real-time listener for ALL inserts...', 'info');
+            addLog('📋 Paste test_10_records.sql into Supabase SQL Editor now!', 'info');
+            addLog('', 'info');
+
+            // Test Supabase connection first
+            try {
+                const { data, error } = await supabase.from('s3_sensor_data').select('*').limit(1);
+                if (error) {
+                    addLog('❌ Supabase connection error: ' + error.message, 'error');
+                    addLog('💡 Make sure Real-time is enabled in Supabase Dashboard → Database → Replication', 'warning');
+                } else {
+                    addLog('✅ Supabase connection verified!', 'success');
+                }
+            } catch (err) {
+                addLog('❌ Connection test failed: ' + err.message, 'error');
+            }
+
+            const channel = supabase
+                .channel('auto-latency-monitor')
+                .on('postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 's3_sensor_data'
+                    }, 
+                    async (payload) => {
+                        const receivedTime = Date.now();
+                        const insertedData = payload.new;
+                        
+                        addLog('🔔 Real-time event received!', 'success');
+                        console.log('Real-time payload:', payload);
+                        
+                        // Queue the test
+                        processingQueue.push({
+                            receivedTime,
+                            insertedData
+                        });
+                        
+                        // Start processing if not already running
+                        if (!isProcessing) {
+                            processQueue();
+                        }
+                    }
+                )
+                .subscribe((status, err) => {
+                    addLog('📡 Subscription status: ' + status, 'info');
+                    if (err) {
+                        addLog('❌ Subscription error: ' + err.message, 'error');
+                    }
+                    if (status === 'SUBSCRIBED') {
+                        addLog('✅ Real-time listener active - ready to track latency!', 'success');
+                        addLog('💡 Now paste test_10_records.sql in Supabase SQL Editor and click RUN', 'warning');
+                        addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n', 'info');
+                        document.getElementById('status').textContent = '🟢 Ready - Paste data now!';
+                    } else if (status === 'CHANNEL_ERROR') {
+                        addLog('❌ Channel error - Real-time may not be enabled!', 'error');
+                        document.getElementById('status').textContent = '🔴 Connection Error';
+                    }
+                });
+        }
+
+        async function processQueue() {
+            if (processingQueue.length === 0) {
+                isProcessing = false;
+                return;
+            }
+
+            isProcessing = true;
+            const test = processingQueue.shift();
+            
+            testCount++;
+            document.getElementById('testCount').textContent = testCount;
+            document.getElementById('status').textContent = '🔵 Processing...';
+            document.getElementById('status').classList.add('testing');
+
+            try {
+                const { receivedTime, insertedData } = test;
+                
+                // Estimate insert time based on created_at
+                const createdAt = new Date(insertedData.created_at).getTime();
+                const realtimeLatency = receivedTime - createdAt;
+
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                addLog(`📍 TEST #${testCount} - Device: ${insertedData.device_id}`, 'info');
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                
+                // Show insert details
+                document.getElementById('liveDevice').textContent = insertedData.device_id;
+                document.getElementById('liveSpO2').textContent = (insertedData.spo2 * 100).toFixed(1) + '%';
+                document.getElementById('liveHeart').textContent = insertedData.heart_rate + ' bpm';
+                document.getElementById('liveRisk').textContent = insertedData.risk_level.toUpperCase();
+                document.getElementById('liveRisk').className = `text-lg font-medium risk-${insertedData.risk_level}`;
+                
+                addLog(`⏱️ Real-time latency: ${realtimeLatency} ms`, realtimeLatency < 500 ? 'success' : 'warning');
+                addLog(`   Insert time: ${new Date(createdAt).toLocaleTimeString()}.${createdAt % 1000}`, 'info');
+                addLog(`   Received: ${new Date(receivedTime).toLocaleTimeString()}.${receivedTime % 1000}`, 'info');
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`, 'info');
+
+                testResults.push({
+                    timestamp: new Date(createdAt),
+                    deviceId: insertedData.device_id,
+                    riskLevel: insertedData.risk_level,
+                    latency: realtimeLatency,
+                    success: true
+                });
+
+                updateStatistics();
+
+            } catch (error) {
+                addLog(`❌ Test failed: ${error.message}\n`, 'error');
+                testResults.push({
+                    timestamp: new Date(),
+                    success: false,
+                    error: error.message
+                });
+            }
+
+            document.getElementById('status').textContent = '🟢 Ready - Listening...';
+            document.getElementById('status').classList.remove('testing');
+
+            // Process next in queue after a short delay
+            setTimeout(() => processQueue(), 300);
+        }
+
+        function updateStatistics() {
+            const successfulTests = testResults.filter(r => r.success);
+            
+            if (successfulTests.length === 0) return;
+
+            const latencies = successfulTests.map(r => r.latency);
+            const avgLatency = latencies.reduce((sum, l) => sum + l, 0) / latencies.length;
+            const minLatency = Math.min(...latencies);
+            const maxLatency = Math.max(...latencies);
+
+            document.getElementById('avgRealtime').textContent = `${Math.round(avgLatency)} ms`;
+            document.getElementById('minLatency').textContent = `${minLatency} ms`;
+            document.getElementById('maxLatency').textContent = `${maxLatency} ms`;
+            document.getElementById('successRate').textContent = `${successfulTests.length}`;
+            
+            document.getElementById('stats').classList.remove('hidden');
+        }
+
+        function addLog(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            
+            if (resultsDiv.querySelector('.text-gray-500')) {
+                resultsDiv.innerHTML = '';
+            }
+
+            const colors = {
+                info: 'text-gray-700',
+                success: 'text-green-600',
+                warning: 'text-yellow-600',
+                error: 'text-red-600'
+            };
+
+            const log = document.createElement('div');
+            log.className = colors[type];
+            log.textContent = message;
+            
+            resultsDiv.appendChild(log);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            testResults = [];
+            testCount = 0;
+            document.getElementById('testCount').textContent = '0';
+            document.getElementById('results').innerHTML = 
+                '<div class="text-gray-500 text-center py-8">Waiting for data... Paste test_10_records.sql into Supabase SQL Editor</div>';
+            document.getElementById('stats').classList.add('hidden');
+            addLog('✅ Results cleared - ready for new tests', 'success');
+            addLog('📋 Paste test_10_records.sql into Supabase SQL Editor now!\n', 'info');
+        }
+
+        // Initialize on load
+        initializeMonitor();
+    </script>
+</body>
+</html>
