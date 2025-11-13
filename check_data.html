@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check S3 Sensor Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .result {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 4px solid #10b981; }
+        .error { border-left: 4px solid #ef4444; }
+        .info { border-left: 4px solid #3b82f6; }
+        pre {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        h1 { color: #1f2937; }
+        h2 { color: #4b5563; font-size: 18px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>📊 S3 Sensor Data Check</h1>
+    
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://ogapdrgcwmzecbwwrmre.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const resultsDiv = document.getElementById('results');
+
+        async function checkData() {
+            try {
+                // Check row count
+                resultsDiv.innerHTML += `<div class="result info"><h2>🔍 Checking table...</h2></div>`;
+
+                const { data, error, count } = await supabase
+                    .from('s3_sensor_data')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    resultsDiv.innerHTML += `
+                        <div class="result error">
+                            <h2>❌ Error accessing table</h2>
+                            <p><strong>Message:</strong> ${error.message}</p>
+                            <pre>${JSON.stringify(error, null, 2)}</pre>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Show count
+                resultsDiv.innerHTML += `
+                    <div class="result ${count > 0 ? 'success' : 'error'}">
+                        <h2>${count > 0 ? '✅' : '⚠️'} Total Records: ${count || 0}</h2>
+                    </div>
+                `;
+
+                if (!data || data.length === 0) {
+                    resultsDiv.innerHTML += `
+                        <div class="result error">
+                            <h2>⚠️ No data found in table</h2>
+                            <p>The table exists but contains no records. Upload your CSV data to Supabase.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Show latest 10 records
+                resultsDiv.innerHTML += `
+                    <div class="result success">
+                        <h2>📋 Latest ${data.length} Records</h2>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                // Show column names
+                const columns = Object.keys(data[0]);
+                resultsDiv.innerHTML += `
+                    <div class="result info">
+                        <h2>📊 Table Columns (${columns.length})</h2>
+                        <p>${columns.join(', ')}</p>
+                    </div>
+                `;
+
+            } catch (err) {
+                resultsDiv.innerHTML += `
+                    <div class="result error">
+                        <h2>❌ Unexpected Error</h2>
+                        <pre>${err.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Run check on load
+        checkData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latency Test - Supabase to Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">⚡ Real-Time Latency Test</h1>
+        <p class="text-gray-600 mb-8">Insert test data → Measure time until dashboard receives it</p>
+        
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                    <select id="riskLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="safe">Safe (SpO2 98%)</option>
+                        <option value="medium">Medium (SpO2 94%, Wheeze)</option>
+                        <option value="high">High (SpO2 85%, Cough)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Number of Tests</label>
+                    <input type="number" id="numTests" value="5" min="1" max="20" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Interval (seconds)</label>
+                    <input type="number" id="interval" value="3" min="1" max="10" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="runSingleTest()" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    🚀 Single Test
+                </button>
+                <button onclick="runMultipleTests()" 
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                    📊 Run Multiple Tests
+                </button>
+                <button onclick="stopTests()" 
+                        class="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                    ⏹️ Stop
+                </button>
+                <button onclick="clearResults()" 
+                        class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+                    🗑️ Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Average Latency</div>
+                <div id="avgLatency" class="text-2xl font-bold text-blue-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Min Latency</div>
+                <div id="minLatency" class="text-2xl font-bold text-green-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Max Latency</div>
+                <div id="maxLatency" class="text-2xl font-bold text-red-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Success Rate</div>
+                <div id="successRate" class="text-2xl font-bold text-purple-600">-- %</div>
+            </div>
+        </div>
+
+        <!-- Results Log -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">📋 Test Results</h2>
+            <div id="results" class="space-y-2 max-h-96 overflow-y-auto">
+                <div class="text-gray-500 text-center py-8">No tests run yet. Click "Single Test" to start.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ogapdrgcwmzecbwwrmre.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let testResults = [];
+        let isRunning = false;
+        let testChannel = null;
+
+        // Test data templates
+        const testData = {
+            safe: {
+                device_id: 'latency_test',
+                heart_rate: 75,
+                spo2: 0.98,
+                accel_mag: 0.4,
+                temperature: 22.5,
+                humidity: 48.0,
+                prediction_label: 'normal',
+                risk_level: 'safe',
+                pm25: 10.0,
+                pm25_density: 0.7,
+                pm25_raw: 100
+            },
+            medium: {
+                device_id: 'latency_test',
+                heart_rate: 92,
+                spo2: 0.94,
+                accel_mag: 1.4,
+                temperature: 27.0,
+                humidity: 61.0,
+                prediction_label: 'wheeze',
+                risk_level: 'medium',
+                pm25: 25.0,
+                pm25_density: 1.2,
+                pm25_raw: 250
+            },
+            high: {
+                device_id: 'latency_test',
+                heart_rate: 120,
+                spo2: 0.85,
+                accel_mag: 3.5,
+                temperature: 35.0,
+                humidity: 82.0,
+                prediction_label: 'cough',
+                risk_level: 'high',
+                pm25: 65.0,
+                pm25_density: 2.3,
+                pm25_raw: 650
+            }
+        };
+
+        async function runSingleTest() {
+            const riskLevel = document.getElementById('riskLevel').value;
+            await performLatencyTest(riskLevel);
+        }
+
+        async function runMultipleTests() {
+            if (isRunning) {
+                addLog('⚠️ Tests already running!', 'warning');
+                return;
+            }
+
+            isRunning = true;
+            const numTests = parseInt(document.getElementById('numTests').value);
+            const interval = parseInt(document.getElementById('interval').value) * 1000;
+            const riskLevel = document.getElementById('riskLevel').value;
+
+            addLog(`🏁 Starting ${numTests} tests with ${interval/1000}s interval...`, 'info');
+
+            for (let i = 0; i < numTests && isRunning; i++) {
+                addLog(`\n📍 Test ${i + 1}/${numTests}`, 'info');
+                await performLatencyTest(riskLevel);
+                
+                if (i < numTests - 1 && isRunning) {
+                    addLog(`⏳ Waiting ${interval/1000} seconds...`, 'info');
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            }
+
+            if (isRunning) {
+                addLog('\n✅ All tests completed!', 'success');
+                isRunning = false;
+            }
+        }
+
+        function stopTests() {
+            if (isRunning) {
+                isRunning = false;
+                addLog('\n⏹️ Tests stopped by user', 'warning');
+            }
+        }
+
+        async function performLatencyTest(riskLevel) {
+            const testId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            let subscription = null;
+            
+            try {
+                const insertStartTime = Date.now();
+                
+                // Step 1: Subscribe to real-time updates FIRST
+                addLog(`🔌 Setting up real-time listener...`, 'info');
+                
+                const latencyPromise = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Timeout: No update received within 10 seconds'));
+                    }, 10000);
+
+                    subscription = supabase
+                        .channel(`latency-test-${testId}`)
+                        .on('postgres_changes', 
+                            { 
+                                event: 'INSERT', 
+                                schema: 'public', 
+                                table: 's3_sensor_data',
+                                filter: `device_id=eq.latency_test`
+                            }, 
+                            (payload) => {
+                                const receivedTime = Date.now();
+                                const latency = receivedTime - insertStartTime;
+                                
+                                clearTimeout(timeout);
+                                resolve({
+                                    latency,
+                                    insertTime: insertStartTime,
+                                    receivedTime,
+                                    payload: payload.new
+                                });
+                            }
+                        )
+                        .subscribe((status) => {
+                            if (status === 'SUBSCRIBED') {
+                                addLog(`✅ Real-time listener active`, 'success');
+                            }
+                        });
+                });
+
+                // Wait a moment for subscription to be fully active
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Step 2: Insert test data
+                const data = { ...testData[riskLevel] };
+                addLog(`📤 Inserting ${riskLevel.toUpperCase()} risk test data...`, 'info');
+                
+                const { data: inserted, error: insertError } = await supabase
+                    .from('s3_sensor_data')
+                    .insert([data])
+                    .select();
+
+                if (insertError) {
+                    throw new Error(`Insert failed: ${insertError.message}`);
+                }
+
+                addLog(`✅ Data inserted at ${new Date(insertStartTime).toLocaleTimeString()}.${insertStartTime % 1000}`, 'success');
+
+                // Step 3: Wait for real-time notification
+                addLog(`⏱️ Waiting for real-time update...`, 'info');
+                const result = await latencyPromise;
+
+                // Step 4: Log results
+                const latencyMs = result.latency;
+                const latencyColor = latencyMs < 500 ? 'success' : latencyMs < 2000 ? 'warning' : 'error';
+                
+                addLog(`⚡ LATENCY: ${latencyMs} ms`, latencyColor);
+                addLog(`   Insert: ${new Date(result.insertTime).toLocaleTimeString()}.${result.insertTime % 1000}`, 'info');
+                addLog(`   Received: ${new Date(result.receivedTime).toLocaleTimeString()}.${result.receivedTime % 1000}`, 'info');
+
+                // Store result
+                testResults.push({
+                    timestamp: new Date(insertStartTime),
+                    riskLevel,
+                    latency: latencyMs,
+                    success: true
+                });
+
+                updateStatistics();
+
+            } catch (error) {
+                addLog(`❌ Test failed: ${error.message}`, 'error');
+                testResults.push({
+                    timestamp: new Date(),
+                    riskLevel,
+                    latency: null,
+                    success: false,
+                    error: error.message
+                });
+                updateStatistics();
+            } finally {
+                // Clean up subscription
+                if (subscription) {
+                    await supabase.removeChannel(subscription);
+                    addLog(`🔌 Real-time listener closed\n`, 'info');
+                }
+            }
+        }
+
+        function updateStatistics() {
+            const successfulTests = testResults.filter(r => r.success);
+            
+            if (successfulTests.length === 0) {
+                return;
+            }
+
+            const latencies = successfulTests.map(r => r.latency);
+            const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+            const min = Math.min(...latencies);
+            const max = Math.max(...latencies);
+            const successRate = (successfulTests.length / testResults.length) * 100;
+
+            document.getElementById('avgLatency').textContent = `${Math.round(avg)} ms`;
+            document.getElementById('minLatency').textContent = `${min} ms`;
+            document.getElementById('maxLatency').textContent = `${max} ms`;
+            document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+            
+            document.getElementById('stats').classList.remove('hidden');
+        }
+
+        function addLog(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            
+            // Clear placeholder
+            if (resultsDiv.querySelector('.text-gray-500')) {
+                resultsDiv.innerHTML = '';
+            }
+
+            const colors = {
+                info: 'text-gray-700',
+                success: 'text-green-600',
+                warning: 'text-yellow-600',
+                error: 'text-red-600'
+            };
+
+            const bgColors = {
+                info: 'bg-gray-50',
+                success: 'bg-green-50',
+                warning: 'bg-yellow-50',
+                error: 'bg-red-50'
+            };
+
+            const log = document.createElement('div');
+            log.className = `px-3 py-2 rounded text-sm font-mono ${colors[type]} ${bgColors[type]}`;
+            log.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            resultsDiv.appendChild(log);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            testResults = [];
+            document.getElementById('results').innerHTML = '<div class="text-gray-500 text-center py-8">No tests run yet. Click "Single Test" to start.</div>';
+            document.getElementById('stats').classList.add('hidden');
+        }
+
+        // Initialize
+        addLog('✅ Latency test tool initialized', 'success');
+        addLog('💡 Tip: This measures Supabase → Browser real-time latency', 'info');
+    </script>
+</body>
+</html>

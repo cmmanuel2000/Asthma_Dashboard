@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ccc;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #fef1f0;
+        }
+        .info {
+            border-left-color: #2196F3;
+            background: #f0f7ff;
+        }
+        h1 { color: #333; }
+        pre {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .loading {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Supabase Connection Diagnostic</h1>
+    
+    <div id="results">
+        <div class="test-box info">
+            <p class="loading">⏳ Running tests...</p>
+        </div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(title, content, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-box ${type}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+
+        async function runDiagnostics() {
+            resultsDiv.innerHTML = '';
+            
+            // Test 1: Check credentials
+            addResult('1️⃣ Checking Credentials', 'URL: https://ogapdrgcwmzecbwwrmre.supabase.co\nAnon Key: eyJhbGci...ua10 (present)', 'info');
+            
+            // Initialize Supabase
+            const SUPABASE_URL = 'https://ogapdrgcwmzecbwwrmre.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10';
+            
+            let supabase;
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                addResult('2️⃣ Supabase Client', 'Client initialized successfully ✅', 'success');
+            } catch (error) {
+                addResult('2️⃣ Supabase Client', `Error: ${error.message}`, 'error');
+                return;
+            }
+            
+            // Test 2: Check if table exists and fetch data
+            try {
+                const { data, error, count } = await supabase
+                    .from('s3_sensor_data')
+                    .select('*', { count: 'exact' })
+                    .limit(1);
+                
+                if (error) {
+                    addResult('3️⃣ Table Access', `Error accessing s3_sensor_data table:\n${error.message}\n\nPossible issues:\n- Table doesn't exist\n- Table name is different\n- Row Level Security blocking access`, 'error');
+                } else {
+                    addResult('3️⃣ Table Access', `✅ Table found!\nTotal records: ${count}\n\nLatest record:\n${JSON.stringify(data[0], null, 2)}`, 'success');
+                }
+            } catch (error) {
+                addResult('3️⃣ Table Access', `Unexpected error: ${error.message}`, 'error');
+            }
+            
+            // Test 3: Check real-time subscription
+            try {
+                const channel = supabase
+                    .channel('test_channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 's3_sensor_data'
+                        },
+                        (payload) => {
+                            addResult('5️⃣ Real-Time Event!', `New data detected!\n${JSON.stringify(payload, null, 2)}`, 'success');
+                        }
+                    )
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            addResult('4️⃣ Real-Time Subscription', `✅ Subscribed successfully!\n\nNow insert a record in Supabase SQL Editor to test.\nThis page will automatically detect it.`, 'success');
+                        } else if (status === 'CHANNEL_ERROR') {
+                            addResult('4️⃣ Real-Time Subscription', `Error: Real-time not working\n\nPossible issues:\n- Real-time not enabled in Supabase\n- Database replication not configured`, 'error');
+                        } else {
+                            addResult('4️⃣ Real-Time Subscription', `Status: ${status}`, 'info');
+                        }
+                    });
+            } catch (error) {
+                addResult('4️⃣ Real-Time Subscription', `Error: ${error.message}`, 'error');
+            }
+            
+            // Test 4: Check API endpoint
+            try {
+                const response = await fetch('/api/assess-risk', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('6️⃣ API Endpoint', `✅ API working!\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    addResult('6️⃣ API Endpoint', `Error ${response.status}: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                addResult('6️⃣ API Endpoint', `Error: ${error.message}\n\nNote: This may fail if testing locally`, 'info');
+            }
+        }
+
+        // Run diagnostics on load
+        runDiagnostics();
+    </script>
+</body>
+</html>

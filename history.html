@@ -96,14 +96,20 @@
             </div>
         </div>
         
-        <!-- Risk Trend Over Time -->
-        <div class="dashboard-card mb-6">
-            <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Risk Level Trend (Last 24 Hours)</h2>
-            <canvas id="riskTrendChart"></canvas>
-        </div>
-        
-        <!-- Grid with two charts -->
+        <!-- 2x2 Grid Layout for Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Risk Trend Over Time -->
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Risk Level Trend (Last 24 Hours)</h2>
+                <canvas id="riskTrendChart"></canvas>
+            </div>
+            
+            <!-- Event Distribution -->
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Event Type Distribution</h2>
+                <canvas id="eventDistributionChart"></canvas>
+            </div>
+            
             <!-- SpO2 Levels -->
             <div class="dashboard-card">
                 <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Blood Oxygen (SpO2) Levels Over Time</h2>
@@ -115,12 +121,6 @@
                 <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Environmental Factors</h2>
                 <canvas id="environmentalChart"></canvas>
             </div>
-        </div>
-        
-        <!-- Event Distribution -->
-        <div class="dashboard-card mb-6">
-            <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Event Type Distribution</h2>
-            <canvas id="eventDistributionChart"></canvas>
         </div>
         
         <div class="text-center text-purple-300 text-sm py-10" id="loadingMessage">Loading historical data...</div>
@@ -171,15 +171,17 @@
         async function loadData() {
             try {
                 document.getElementById('loadingMessage').classList.remove('hidden');
+                document.getElementById('loadingMessage').textContent = 'Loading data from Supabase...';
                 
                 const response = await fetch('/api/history', { method: 'POST' });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch data');
+                    throw new Error(`API returned status: ${response.status}`);
                 }
                 
                 const data = await response.json();
                 
+                console.log(`✅ Loaded ${data.length} records from Supabase`);
                 document.getElementById('loadingMessage').classList.add('hidden');
                 
                 // Update statistics
@@ -192,11 +194,12 @@
                 createEventDistributionChart(data);
                 
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('❌ Error loading data from API:', error);
+                console.log('⚠️ This is expected when viewing locally. Data will load correctly on Vercel.');
                 document.getElementById('loadingMessage').innerHTML = 
-                    '<span class="text-red-200">Error loading data. Using demo data...</span>';
+                    '<span class="text-yellow-200">⚠️ API unavailable (viewing locally). Deploy to Vercel to see real data.</span>';
                 
-                // Load demo data
+                // Load demo data as fallback
                 loadDemoData();
             }
         }
@@ -245,6 +248,10 @@
                 : 0;
             document.getElementById('avgTemp').textContent = avgTemp.toFixed(1);
         }
+        
+        // Configure Chart.js defaults for white text
+        Chart.defaults.color = '#ffffff';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
         
         // Create Risk Trend Chart
         function createRiskTrendChart(data) {

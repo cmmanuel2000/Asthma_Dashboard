@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Pipeline Latency Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">🔄 Full Pipeline Latency Test</h1>
+        <p class="text-gray-600 mb-8">Measures: Insert → Supabase → Vercel API → Dashboard Display</p>
+        
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                    <select id="riskLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="safe">Safe (SpO2 98%)</option>
+                        <option value="medium">Medium (SpO2 94%, Wheeze)</option>
+                        <option value="high">High (SpO2 85%, Cough)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Number of Tests</label>
+                    <input type="number" id="numTests" value="5" min="1" max="20" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Interval (seconds)</label>
+                    <input type="number" id="interval" value="5" min="2" max="30" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="runSingleTest()" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    🚀 Single Test
+                </button>
+                <button onclick="runMultipleTests()" 
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                    📊 Run Multiple Tests
+                </button>
+                <button onclick="stopTests()" 
+                        class="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                    ⏹️ Stop
+                </button>
+                <button onclick="clearResults()" 
+                        class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+                    🗑️ Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div id="stats" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Avg Real-time</div>
+                <div id="avgRealtime" class="text-2xl font-bold text-blue-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Avg API Call</div>
+                <div id="avgApi" class="text-2xl font-bold text-green-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Avg Total</div>
+                <div id="avgTotal" class="text-2xl font-bold text-purple-600">-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Min/Max Total</div>
+                <div id="minMaxTotal" class="text-lg font-bold text-orange-600">--/-- ms</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Success Rate</div>
+                <div id="successRate" class="text-2xl font-bold text-red-600">-- %</div>
+            </div>
+        </div>
+
+        <!-- Live Dashboard Preview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b">💓 Health Monitoring (Live)</h2>
+                <div class="space-y-2">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Blood Oxygen (SpO2)</span>
+                        <span class="text-lg font-medium" id="liveSpO2">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Heart Rate</span>
+                        <span class="text-lg font-medium" id="liveHeart">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Breathing Rate</span>
+                        <span class="text-lg font-medium" id="liveBreathing">--</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm text-gray-600">Respiratory Sounds</span>
+                        <span class="text-lg font-medium" id="liveAudio">--</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t">
+                    <div class="text-center">
+                        <span class="risk-badge inline-block px-4 py-1 rounded text-sm font-medium" id="liveRisk">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b">🌡️ Environmental (Live)</h2>
+                <div class="space-y-2">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Temperature</span>
+                        <span class="text-lg font-medium" id="liveTemp">--</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Humidity</span>
+                        <span class="text-lg font-medium" id="liveHumidity">--</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm text-gray-600">PM2.5</span>
+                        <span class="text-lg font-medium" id="livePM25">--</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t">
+                    <div class="text-center">
+                        <span class="risk-badge inline-block px-4 py-1 rounded text-sm font-medium" id="liveEnvRisk">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Log -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">📋 Detailed Test Results</h2>
+            <div id="results" class="space-y-2 max-h-96 overflow-y-auto font-mono text-sm">
+                <div class="text-gray-500 text-center py-8">No tests run yet. Click "Single Test" to start.</div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .risk-badge { transition: all 0.3s ease; }
+        .risk-safe { background-color: #dcfce7; color: #166534; }
+        .risk-medium { background-color: #fef3c7; color: #92400e; }
+        .risk-high { background-color: #fee2e2; color: #991b1b; }
+        .risk-unknown { background-color: #f3f4f6; color: #4b5563; }
+    </style>
+
+    <script>
+        const SUPABASE_URL = 'https://ogapdrgcwmzecbwwrmre.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10';
+        const API_BASE = window.location.origin; // Will use Vercel domain
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let testResults = [];
+        let isRunning = false;
+        let realtimeSubscription = null;
+
+        // Test data templates
+        const testData = {
+            safe: {
+                device_id: 'pipeline_test',
+                heart_rate: 75,
+                spo2: 0.98,
+                accel_mag: 0.4,
+                temperature: 22.5,
+                humidity: 48.0,
+                prediction_label: 'normal',
+                risk_level: 'safe',
+                pm25: 10.0,
+                pm25_density: 0.7,
+                pm25_raw: 100
+            },
+            medium: {
+                device_id: 'pipeline_test',
+                heart_rate: 92,
+                spo2: 0.94,
+                accel_mag: 1.4,
+                temperature: 27.0,
+                humidity: 61.0,
+                prediction_label: 'wheeze',
+                risk_level: 'medium',
+                pm25: 25.0,
+                pm25_density: 1.2,
+                pm25_raw: 250
+            },
+            high: {
+                device_id: 'pipeline_test',
+                heart_rate: 120,
+                spo2: 0.85,
+                accel_mag: 3.5,
+                temperature: 35.0,
+                humidity: 82.0,
+                prediction_label: 'cough',
+                risk_level: 'high',
+                pm25: 65.0,
+                pm25_density: 2.3,
+                pm25_raw: 650
+            }
+        };
+
+        async function runSingleTest() {
+            const riskLevel = document.getElementById('riskLevel').value;
+            await performPipelineTest(riskLevel);
+        }
+
+        async function runMultipleTests() {
+            if (isRunning) {
+                addLog('⚠️ Tests already running!', 'warning');
+                return;
+            }
+
+            isRunning = true;
+            const numTests = parseInt(document.getElementById('numTests').value);
+            const interval = parseInt(document.getElementById('interval').value) * 1000;
+            const riskLevel = document.getElementById('riskLevel').value;
+
+            addLog(`🏁 Starting ${numTests} tests with ${interval/1000}s interval...\n`, 'info');
+
+            for (let i = 0; i < numTests && isRunning; i++) {
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                addLog(`📍 TEST ${i + 1}/${numTests}`, 'info');
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                await performPipelineTest(riskLevel);
+                
+                if (i < numTests - 1 && isRunning) {
+                    addLog(`⏳ Waiting ${interval/1000} seconds...\n`, 'info');
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            }
+
+            if (isRunning) {
+                addLog('\n✅ All tests completed!', 'success');
+                isRunning = false;
+            }
+        }
+
+        function stopTests() {
+            if (isRunning) {
+                isRunning = false;
+                addLog('\n⏹️ Tests stopped by user', 'warning');
+            }
+        }
+
+        async function performPipelineTest(riskLevel) {
+            const testId = `test_${Date.now()}`;
+            let subscription = null;
+            
+            try {
+                const overallStartTime = Date.now();
+                let realtimeLatency = null;
+                let apiLatency = null;
+                let displayLatency = null;
+
+                // STEP 1: Setup real-time listener
+                addLog(`🔌 Setting up real-time listener...`, 'info');
+                
+                const realtimePromise = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Real-time timeout (10s)'));
+                    }, 10000);
+
+                    subscription = supabase
+                        .channel(`pipeline-test-${testId}`)
+                        .on('postgres_changes', 
+                            { 
+                                event: 'INSERT', 
+                                schema: 'public', 
+                                table: 's3_sensor_data',
+                                filter: `device_id=eq.pipeline_test`
+                            }, 
+                            (payload) => {
+                                const receivedTime = Date.now();
+                                clearTimeout(timeout);
+                                resolve(receivedTime);
+                            }
+                        )
+                        .subscribe();
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 500)); // Wait for subscription
+
+                // STEP 2: Insert test data
+                const insertStartTime = Date.now();
+                const data = { ...testData[riskLevel] };
+                addLog(`📤 Inserting ${riskLevel.toUpperCase()} risk data... [T+0ms]`, 'info');
+                
+                const { data: inserted, error: insertError } = await supabase
+                    .from('s3_sensor_data')
+                    .insert([data])
+                    .select();
+
+                if (insertError) {
+                    throw new Error(`Insert failed: ${insertError.message}`);
+                }
+
+                // STEP 3: Wait for real-time notification
+                addLog(`⏱️ Waiting for real-time update...`, 'info');
+                const realtimeReceivedTime = await realtimePromise;
+                realtimeLatency = realtimeReceivedTime - insertStartTime;
+                addLog(`✅ Real-time received [T+${realtimeLatency}ms]`, realtimeLatency < 500 ? 'success' : 'warning');
+
+                // STEP 4: Call Vercel API endpoints
+                addLog(`🌐 Calling Vercel API endpoints...`, 'info');
+                const apiStartTime = Date.now();
+                
+                const [healthResponse, envResponse] = await Promise.all([
+                    fetch(`${API_BASE}/api/assess-risk`, { method: 'POST' }),
+                    fetch(`${API_BASE}/api/assess-environmental`, { method: 'POST' })
+                ]);
+
+                if (!healthResponse.ok || !envResponse.ok) {
+                    throw new Error(`API call failed: ${healthResponse.status}, ${envResponse.status}`);
+                }
+
+                const [healthData, envData] = await Promise.all([
+                    healthResponse.json(),
+                    envResponse.json()
+                ]);
+
+                const apiEndTime = Date.now();
+                apiLatency = apiEndTime - apiStartTime;
+                addLog(`✅ API responded [T+${apiEndTime - insertStartTime}ms] (${apiLatency}ms)`, apiLatency < 1000 ? 'success' : 'warning');
+
+                // STEP 5: Update display
+                const displayStartTime = Date.now();
+                updateLiveDisplay(healthData, envData);
+                displayLatency = Date.now() - displayStartTime;
+                
+                // STEP 6: Calculate total latency
+                const totalLatency = Date.now() - insertStartTime;
+                
+                addLog(``, 'info');
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                addLog(`⚡ LATENCY BREAKDOWN:`, 'info');
+                addLog(`   Real-time:  ${realtimeLatency.toString().padEnd(6)} ms`, realtimeLatency < 500 ? 'success' : 'warning');
+                addLog(`   API Call:   ${apiLatency.toString().padEnd(6)} ms`, apiLatency < 1000 ? 'success' : 'warning');
+                addLog(`   Display:    ${displayLatency.toString().padEnd(6)} ms`, 'success');
+                addLog(`   ────────────────────`, 'info');
+                addLog(`   TOTAL:      ${totalLatency.toString().padEnd(6)} ms`, totalLatency < 2000 ? 'success' : 'warning');
+                addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`, 'info');
+
+                // Store result
+                testResults.push({
+                    timestamp: new Date(insertStartTime),
+                    riskLevel,
+                    realtimeLatency,
+                    apiLatency,
+                    displayLatency,
+                    totalLatency,
+                    success: true
+                });
+
+                updateStatistics();
+
+            } catch (error) {
+                addLog(`❌ Test failed: ${error.message}\n`, 'error');
+                testResults.push({
+                    timestamp: new Date(),
+                    riskLevel,
+                    success: false,
+                    error: error.message
+                });
+                updateStatistics();
+            } finally {
+                if (subscription) {
+                    await supabase.removeChannel(subscription);
+                }
+            }
+        }
+
+        function updateLiveDisplay(healthData, envData) {
+            // Health data
+            document.getElementById('liveSpO2').textContent = 
+                healthData.sensor_data.spo2 ? healthData.sensor_data.spo2.toFixed(1) + '%' : '--';
+            document.getElementById('liveHeart').textContent = 
+                healthData.sensor_data.heart_rate ? healthData.sensor_data.heart_rate.toFixed(0) + ' bpm' : '--';
+            document.getElementById('liveBreathing').textContent = 
+                healthData.sensor_data.breathing_rate ? healthData.sensor_data.breathing_rate.toFixed(0) + ' bpm' : '--';
+            document.getElementById('liveAudio').textContent = 
+                healthData.sensor_data.audio_detection || '--';
+
+            const riskBadge = document.getElementById('liveRisk');
+            riskBadge.textContent = healthData.risk.toUpperCase();
+            riskBadge.className = `risk-badge inline-block px-4 py-1 rounded text-sm font-medium risk-${healthData.risk}`;
+
+            // Environmental data
+            document.getElementById('liveTemp').textContent = 
+                envData.sensor_data.temperature ? envData.sensor_data.temperature.toFixed(1) + '°C' : '--';
+            document.getElementById('liveHumidity').textContent = 
+                envData.sensor_data.humidity ? envData.sensor_data.humidity.toFixed(1) + '%' : '--';
+            document.getElementById('livePM25').textContent = 
+                envData.sensor_data.pm25 ? envData.sensor_data.pm25.toFixed(1) + ' µg/m³' : '--';
+
+            const envRiskBadge = document.getElementById('liveEnvRisk');
+            envRiskBadge.textContent = envData.risk.toUpperCase();
+            envRiskBadge.className = `risk-badge inline-block px-4 py-1 rounded text-sm font-medium risk-${envData.risk}`;
+        }
+
+        function updateStatistics() {
+            const successfulTests = testResults.filter(r => r.success);
+            
+            if (successfulTests.length === 0) return;
+
+            const avgRealtime = successfulTests.reduce((sum, r) => sum + r.realtimeLatency, 0) / successfulTests.length;
+            const avgApi = successfulTests.reduce((sum, r) => sum + r.apiLatency, 0) / successfulTests.length;
+            const avgTotal = successfulTests.reduce((sum, r) => sum + r.totalLatency, 0) / successfulTests.length;
+            
+            const totalLatencies = successfulTests.map(r => r.totalLatency);
+            const minTotal = Math.min(...totalLatencies);
+            const maxTotal = Math.max(...totalLatencies);
+            
+            const successRate = (successfulTests.length / testResults.length) * 100;
+
+            document.getElementById('avgRealtime').textContent = `${Math.round(avgRealtime)} ms`;
+            document.getElementById('avgApi').textContent = `${Math.round(avgApi)} ms`;
+            document.getElementById('avgTotal').textContent = `${Math.round(avgTotal)} ms`;
+            document.getElementById('minMaxTotal').textContent = `${minTotal}/${maxTotal} ms`;
+            document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+            
+            document.getElementById('stats').classList.remove('hidden');
+        }
+
+        function addLog(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            
+            if (resultsDiv.querySelector('.text-gray-500')) {
+                resultsDiv.innerHTML = '';
+            }
+
+            const colors = {
+                info: 'text-gray-700',
+                success: 'text-green-600',
+                warning: 'text-yellow-600',
+                error: 'text-red-600'
+            };
+
+            const log = document.createElement('div');
+            log.className = `${colors[type]}`;
+            log.textContent = message;
+            
+            resultsDiv.appendChild(log);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            testResults = [];
+            document.getElementById('results').innerHTML = 
+                '<div class="text-gray-500 text-center py-8">No tests run yet. Click "Single Test" to start.</div>';
+            document.getElementById('stats').classList.add('hidden');
+        }
+
+        // Initialize
+        addLog('✅ Full pipeline latency test initialized', 'success');
+        addLog('💡 Measures: Insert → Real-time → API → Display', 'info');
+        addLog('🌐 Using API: ' + API_BASE, 'info');
+        addLog('', 'info');
+    </script>
+</body>
+</html>
