@@ -417,22 +417,18 @@
             
             riskBadge.textContent = risk.toUpperCase();
             
-            // Remove all classes and inline styles first
-            riskBadge.className = '';
-            riskBadge.removeAttribute('style');
-            
-            // Apply styles based on risk level
-            const baseStyle = 'display: inline-block; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-size: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; background: transparent;';
+            // Apply styles based on risk level with !important
+            const baseStyle = 'display: inline-block !important; padding: 0.5rem 1.5rem !important; border-radius: 0.5rem !important; font-size: 1rem !important; font-weight: bold !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; background: transparent !important;';
             
             if (risk === 'safe') {
                 riskBadge.className = 'risk-safe';
-                riskBadge.style.cssText = baseStyle + ' color: #10b981; border: 2px solid #10b981;';
+                riskBadge.style.cssText = baseStyle + ' color: #10b981 !important; border: 2px solid #10b981 !important;';
             } else if (risk === 'medium') {
                 riskBadge.className = 'risk-medium';
-                riskBadge.style.cssText = baseStyle + ' color: #fbbf24; border: 2px solid #fbbf24;';
+                riskBadge.style.cssText = baseStyle + ' color: #fbbf24 !important; border: 2px solid #fbbf24 !important;';
             } else if (risk === 'high') {
                 riskBadge.className = 'risk-high';
-                riskBadge.style.cssText = baseStyle + ' color: #ef4444; border: 2px solid #ef4444;';
+                riskBadge.style.cssText = baseStyle + ' color: #ef4444 !important; border: 2px solid #ef4444 !important;';
             }
             
             console.log(`Applied class: ${riskBadge.className}`);
