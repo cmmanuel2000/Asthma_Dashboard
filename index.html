@@ -526,8 +526,25 @@
                 `Last updated: ${now.toLocaleTimeString()}`;
         }
 
+        // Force initial badge styling
+        function initializeBadges() {
+            const physioRisk = document.getElementById('physioRisk');
+            const envRisk = document.getElementById('envRisk');
+            
+            // Apply default styling to prevent blank badges
+            const defaultStyle = 'display: inline-block; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-size: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; background: transparent; color: #9ca3af; border: 2px solid #6b7280;';
+            
+            physioRisk.style.cssText = defaultStyle;
+            envRisk.style.cssText = defaultStyle;
+            
+            console.log('✅ Badges initialized with default styling');
+        }
+
         // Check audio preference on page load
         checkAudioPreference();
+
+        // Initialize badges immediately
+        initializeBadges();
 
         // Initialize Supabase real-time on page load
         initSupabase();
