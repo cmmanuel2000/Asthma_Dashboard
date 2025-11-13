@@ -195,9 +195,22 @@
                 
             } catch (error) {
                 console.error('❌ Error loading data from API:', error);
-                console.log('⚠️ This is expected when viewing locally. Data will load correctly on Vercel.');
+                
+                // Try to get more details from the error response
+                let errorDetails = 'Unknown error';
+                try {
+                    const errorText = await error.text?.();
+                    if (errorText) {
+                        const errorJson = JSON.parse(errorText);
+                        errorDetails = errorJson.error || errorJson.message || errorText;
+                        console.log('API Error Details:', errorJson);
+                    }
+                } catch (e) {
+                    errorDetails = error.message || error.toString();
+                }
+                
                 document.getElementById('loadingMessage').innerHTML = 
-                    '<span class="text-yellow-200">⚠️ API unavailable (viewing locally). Deploy to Vercel to see real data.</span>';
+                    `<span class="text-yellow-200">⚠️ API Error: ${errorDetails}<br>Using demo data as fallback.</span>`;
                 
                 // Load demo data as fallback
                 loadDemoData();

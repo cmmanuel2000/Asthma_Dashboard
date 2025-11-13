@@ -221,13 +221,21 @@ def assess_environmental_endpoint():
         print("--------------------------", file=sys.stderr)
         return jsonify({"error": "A server error occurred. Check Vercel logs."}), 500
 
-@app.route('/api/history', methods=['POST'])
+@app.route('/api/history', methods=['POST', 'GET'])
 def get_history_endpoint():
     """Fetch historical sensor data for analytics"""
     try:
         if not supabase:
-            print("ERROR: Supabase client not initialized", file=sys.stderr)
-            return jsonify({"error": "Database not available"}), 500
+            error_msg = f"ERROR: Supabase client not initialized. URL={SUPABASE_URL is not None}, KEY={SUPABASE_KEY is not None}"
+            print(error_msg, file=sys.stderr)
+            return jsonify({
+                "error": "Database not available",
+                "details": error_msg,
+                "env_check": {
+                    "has_url": SUPABASE_URL is not None,
+                    "has_key": SUPABASE_KEY is not None
+                }
+            }), 500
             
         print("\nReceived request to /api/history")
         
@@ -239,17 +247,22 @@ def get_history_endpoint():
             .execute()
         
         if not response.data:
+            print("WARNING: No data returned from Supabase query")
             return jsonify([]), 200
         
         print(f"-> Retrieved {len(response.data)} historical records")
         
         return jsonify(response.data), 200
         
-    except Exception:
+    except Exception as e:
         print("--- RUNTIME ERROR CAUGHT ---", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)
         print("--------------------------", file=sys.stderr)
-        return jsonify({"error": "A server error occurred. Check Vercel logs."}), 500
+        return jsonify({
+            "error": "A server error occurred",
+            "message": str(e),
+            "type": type(e).__name__
+        }), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

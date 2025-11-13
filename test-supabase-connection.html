@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stat {
+            font-size: 48px;
+            font-weight: bold;
+            color: #10b981;
+            margin: 10px 0;
+        }
+        .label {
+            font-size: 14px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .loading {
+            color: #fbbf24;
+        }
+        .error {
+            color: #ef4444;
+        }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Direct Supabase Connection Test</h1>
+    <p>This page connects DIRECTLY to Supabase (no API needed)</p>
+    
+    <button onclick="testConnection()">📊 Load Real Statistics from Supabase</button>
+    
+    <div class="card">
+        <div class="label">Total Records</div>
+        <div class="stat" id="totalRecords">--</div>
+    </div>
+    
+    <div class="card">
+        <div class="label">High Risk Events</div>
+        <div class="stat" id="highRisk" style="color: #ef4444;">--</div>
+    </div>
+    
+    <div class="card">
+        <div class="label">Average SpO2 (%)</div>
+        <div class="stat" id="avgSpO2" style="color: #3b82f6;">--</div>
+    </div>
+    
+    <div class="card">
+        <div class="label">Average Temperature (°C)</div>
+        <div class="stat" id="avgTemp" style="color: #0ea5e9;">--</div>
+    </div>
+    
+    <div class="card">
+        <div class="label">Status</div>
+        <div id="status">Click button to test...</div>
+    </div>
+    
+    <div class="card">
+        <div class="label">Raw Data Preview (first 3 records)</div>
+        <pre id="rawData">--</pre>
+    </div>
+
+    <script>
+        const supabaseClient = supabase.createClient(
+            'https://ogapdrgcwmzecbwwrmre.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nYXBkcmdjd216ZWNid3dybXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNDIxNzAsImV4cCI6MjA3MzkxODE3MH0.5ondVqwEc09dcuO9DsFcOqVl8lctcrI4CIjmhKsua10'
+        );
+
+        async function testConnection() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = '<span class="loading">⏳ Connecting to Supabase...</span>';
+            
+            try {
+                // Fetch last 100 records from s3_sensor_data
+                const { data, error } = await supabaseClient
+                    .from('s3_sensor_data')
+                    .select('created_at, prediction_label, risk_level, spo2, temperature, humidity, pm25')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                
+                if (error) throw error;
+                
+                console.log('✅ Data fetched:', data);
+                
+                // Calculate statistics
+                const totalRecords = data.length;
+                const highRiskCount = data.filter(d => d.risk_level === 'high').length;
+                const avgSpO2 = (data.reduce((sum, d) => sum + (d.spo2 || 0), 0) / data.length * 100).toFixed(1);
+                
+                const validTemps = data.filter(d => d.temperature != null);
+                const avgTemp = validTemps.length > 0 
+                    ? (validTemps.reduce((sum, d) => sum + d.temperature, 0) / validTemps.length).toFixed(1)
+                    : '0.0';
+                
+                // Update display
+                document.getElementById('totalRecords').textContent = totalRecords;
+                document.getElementById('highRisk').textContent = highRiskCount;
+                document.getElementById('avgSpO2').textContent = avgSpO2;
+                document.getElementById('avgTemp').textContent = avgTemp;
+                
+                statusEl.innerHTML = '<span style="color: #10b981;">✅ Successfully loaded ' + totalRecords + ' records from Supabase!</span>';
+                
+                // Show first 3 records
+                document.getElementById('rawData').textContent = JSON.stringify(data.slice(0, 3), null, 2);
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                statusEl.innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+                document.getElementById('rawData').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
