@@ -3,73 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History & Analytics - Asthma Dashboard</title>
+    <title>History & Analytics - HikOn</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a8a 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .btn-purple {
+            background: rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            color: #c4b5fd;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-purple:hover {
+            background: rgba(139, 92, 246, 0.5);
+            border-color: rgba(139, 92, 246, 0.8);
+        }
+
+        .btn-blue {
+            background: rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-blue:hover {
+            background: rgba(59, 130, 246, 0.5);
+            border-color: rgba(59, 130, 246, 0.8);
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-gray-50 p-5">
+<body class="min-h-screen p-5">
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-center text-gray-800 text-3xl md:text-4xl font-light mb-2 tracking-tight">History & Analytics</h1>
-        <p class="text-center text-gray-500 text-sm mb-8">Historical data and trend analysis</p>
+        <div class="text-center mb-10">
+            <h1 class="text-white text-4xl md:text-5xl font-semibold tracking-tight mb-3">History & Analytics</h1>
+            <p class="text-purple-300 text-base">Historical data and trend analysis</p>
+        </div>
         
-        <div class="text-center mb-8 space-x-2 md:space-x-3">
-            <button onclick="window.location.href='index.html'" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">
+        <div class="text-center mb-10 space-x-3">
+            <button onclick="window.location.href='index.html'" class="btn-purple">
                 Back to Dashboard
             </button>
-            <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">
+            <button onclick="loadData()" class="btn-blue">
                 Refresh Data
             </button>
         </div>
         
         <!-- Statistics Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                <div class="text-2xl font-medium text-gray-800" id="totalRecords">--</div>
-                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Total Records</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="stat-card text-center">
+                <div class="text-4xl font-bold text-white mb-2" id="totalRecords">--</div>
+                <div class="text-purple-200 text-xs uppercase tracking-wider">Total Records</div>
             </div>
-            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                <div class="text-2xl font-medium text-red-600" id="highRiskCount">--</div>
-                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">High Risk Events</div>
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%);">
+                <div class="text-4xl font-bold text-white mb-2" id="highRiskCount">--</div>
+                <div class="text-red-200 text-xs uppercase tracking-wider">High Risk Events</div>
             </div>
-            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                <div class="text-2xl font-medium text-blue-600" id="avgSpO2">--</div>
-                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Avg SpO2 (%)</div>
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%);">
+                <div class="text-4xl font-bold text-white mb-2" id="avgSpO2">--</div>
+                <div class="text-blue-200 text-xs uppercase tracking-wider">Avg SpO2 (%)</div>
             </div>
-            <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                <div class="text-2xl font-medium text-gray-800" id="avgTemp">--</div>
-                <div class="text-gray-500 text-xs mt-1 uppercase tracking-wider">Avg Temp (°C)</div>
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(6, 182, 212, 0.3) 100%);">
+                <div class="text-4xl font-bold text-white mb-2" id="avgTemp">--</div>
+                <div class="text-cyan-200 text-xs uppercase tracking-wider">Avg Temp (°C)</div>
             </div>
         </div>
         
         <!-- Risk Trend Over Time -->
-        <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7 mb-5">
-            <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Risk Level Trend (Last 24 Hours)</h2>
+        <div class="dashboard-card mb-6">
+            <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Risk Level Trend (Last 24 Hours)</h2>
             <canvas id="riskTrendChart"></canvas>
         </div>
         
         <!-- Grid with two charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- SpO2 Levels -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
-                <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Blood Oxygen (SpO2) Levels Over Time</h2>
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Blood Oxygen (SpO2) Levels Over Time</h2>
                 <canvas id="spo2Chart"></canvas>
             </div>
             
             <!-- Environmental Factors -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
-                <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Environmental Factors</h2>
+            <div class="dashboard-card">
+                <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Environmental Factors</h2>
                 <canvas id="environmentalChart"></canvas>
             </div>
         </div>
         
         <!-- Event Distribution -->
-        <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7 mb-6">
-            <h2 class="text-lg font-medium mb-4 text-gray-800 border-l-4 border-blue-400 pl-3">Event Type Distribution</h2>
+        <div class="dashboard-card mb-6">
+            <h2 class="text-xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Event Type Distribution</h2>
             <canvas id="eventDistributionChart"></canvas>
         </div>
         
-        <div class="text-center text-gray-400 text-xs py-10" id="loadingMessage">Loading historical data...</div>
+        <div class="text-center text-purple-300 text-sm py-10" id="loadingMessage">Loading historical data...</div>
     </div>
 
     <script>

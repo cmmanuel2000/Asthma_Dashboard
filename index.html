@@ -56,21 +56,21 @@
         }
 
         .risk-safe {
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.15);
             color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            border: 2px solid rgba(16, 185, 129, 0.5);
         }
 
         .risk-medium {
-            background: rgba(251, 191, 36, 0.2);
+            background: rgba(251, 191, 36, 0.15);
             color: #fbbf24;
-            border: 1px solid rgba(251, 191, 36, 0.3);
+            border: 2px solid rgba(251, 191, 36, 0.5);
         }
 
         .risk-high {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 2px solid rgba(239, 68, 68, 0.5);
         }
 
         .btn-purple {
@@ -121,24 +121,19 @@
     
     <div class="max-w-7xl mx-auto">
         <div class="text-center mb-10">
-            <div class="flex items-center justify-center gap-3 mb-3">
-                <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                </svg>
-                <h1 class="text-white text-4xl md:text-5xl font-semibold tracking-tight">HikOn: Asthma Risk Monitoring</h1>
-            </div>
+            <h1 class="text-white text-4xl md:text-5xl font-semibold tracking-tight mb-3">HikOn: Asthma Risk Monitoring</h1>
             <p class="text-purple-300 text-base">Real-time health and environmental assessment</p>
         </div>
         
         <div class="text-center mb-10 space-x-3">
             <button onclick="window.location.href='history.html'" class="btn-purple">
-                📊 History & Trends
+                History & Trends
             </button>
             <button onclick="testSound()" class="btn-blue">
                 Test Alert
             </button>
             <button id="toggleSound" onclick="toggleSoundNotifications()" class="btn-blue">
-                <span id="soundIcon">🔊</span> <span id="soundText">Sound On</span>
+                <span id="soundText">Sound On</span>
             </button>
         </div>
         
@@ -339,16 +334,13 @@
         function toggleSoundNotifications() {
             soundEnabled = !soundEnabled;
             const btn = document.getElementById('toggleSound');
-            const icon = document.getElementById('soundIcon');
             const text = document.getElementById('soundText');
             
             if (soundEnabled) {
-                btn.className = 'bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200';
-                icon.textContent = '🔊';
+                btn.className = 'btn-blue';
                 text.textContent = 'Sound On';
             } else {
-                btn.className = 'bg-white border border-gray-300 text-gray-400 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-all duration-200';
-                icon.textContent = '🔇';
+                btn.className = 'btn-blue opacity-50';
                 text.textContent = 'Sound Off';
             }
             
