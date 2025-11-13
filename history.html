@@ -167,19 +167,25 @@
                 });
         }
         
-        // Function to load data from Supabase
+        // Function to load data from Supabase - DIRECT CONNECTION (bypass API)
         async function loadData() {
             try {
                 document.getElementById('loadingMessage').classList.remove('hidden');
                 document.getElementById('loadingMessage').textContent = 'Loading data from Supabase...';
                 
-                const response = await fetch('/api/history', { method: 'POST' });
+                console.log('🔄 Connecting directly to Supabase...');
                 
-                if (!response.ok) {
-                    throw new Error(`API returned status: ${response.status}`);
+                // Fetch last 100 records directly from Supabase
+                const { data, error } = await supabaseClient
+                    .from('s3_sensor_data')
+                    .select('created_at, prediction_label, risk_level, spo2, temperature, humidity, pm25')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                
+                if (error) {
+                    console.error('❌ Supabase error:', error);
+                    throw error;
                 }
-                
-                const data = await response.json();
                 
                 console.log(`✅ Loaded ${data.length} records from Supabase`);
                 document.getElementById('loadingMessage').classList.add('hidden');
@@ -194,23 +200,9 @@
                 createEventDistributionChart(data);
                 
             } catch (error) {
-                console.error('❌ Error loading data from API:', error);
-                
-                // Try to get more details from the error response
-                let errorDetails = 'Unknown error';
-                try {
-                    const errorText = await error.text?.();
-                    if (errorText) {
-                        const errorJson = JSON.parse(errorText);
-                        errorDetails = errorJson.error || errorJson.message || errorText;
-                        console.log('API Error Details:', errorJson);
-                    }
-                } catch (e) {
-                    errorDetails = error.message || error.toString();
-                }
-                
+                console.error('❌ Error loading data from Supabase:', error);
                 document.getElementById('loadingMessage').innerHTML = 
-                    `<span class="text-yellow-200">⚠️ API Error: ${errorDetails}<br>Using demo data as fallback.</span>`;
+                    `<span class="text-red-200">❌ Error: ${error.message}<br>Using demo data as fallback.</span>`;
                 
                 // Load demo data as fallback
                 loadDemoData();
