@@ -413,6 +413,8 @@
         function updateDisplay(riskId, triggersId, risk, triggers) {
             // Update risk badge styling - dark theme
             const riskBadge = document.getElementById(riskId);
+            console.log(`Updating ${riskId} with risk level: ${risk}`);
+            
             riskBadge.textContent = risk.toUpperCase();
             
             // Remove all classes first
@@ -426,6 +428,9 @@
             } else if (risk === 'high') {
                 riskBadge.className = 'risk-high';
             }
+            
+            console.log(`Applied class: ${riskBadge.className}`);
+            console.log(`Element styles:`, window.getComputedStyle(riskBadge).border);
             
             // Update triggers list
             const triggersDiv = document.getElementById(triggersId);
