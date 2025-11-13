@@ -174,6 +174,11 @@
                 document.getElementById('loadingMessage').textContent = 'Loading data from Supabase...';
                 
                 console.log('🔄 Connecting directly to Supabase...');
+                console.log('Supabase client status:', supabaseClient ? 'INITIALIZED' : 'NOT INITIALIZED');
+                
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
                 
                 // Fetch last 100 records directly from Supabase
                 const { data, error } = await supabaseClient
@@ -459,8 +464,13 @@
         }
         
         // Load data on page load
-        window.onload = () => {
+        window.onload = async () => {
+            console.log('🚀 Page loaded, initializing...');
             initSupabase(); // Initialize real-time subscriptions
+            
+            // Wait a moment for Supabase client to be ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             loadData(); // Load actual data from Supabase
         };
     </script>
