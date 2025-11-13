@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asthma Risk Dashboard</title>
+    <title>HikOn: Asthma Risk Monitoring</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -33,9 +33,78 @@
         .audio-prompt-hidden {
             display: none;
         }
+
+        body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a8a 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .risk-safe {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .risk-medium {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .risk-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-purple {
+            background: rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            color: #c4b5fd;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-purple:hover {
+            background: rgba(139, 92, 246, 0.5);
+            border-color: rgba(139, 92, 246, 0.8);
+        }
+
+        .btn-blue {
+            background: rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-blue:hover {
+            background: rgba(59, 130, 246, 0.5);
+            border-color: rgba(59, 130, 246, 0.8);
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50 p-5">
+<body class="min-h-screen p-5"
     <!-- Audio Enable Prompt -->
     <div id="audioPrompt" class="audio-prompt">
         <div class="bg-white rounded-lg p-8 max-w-md text-center shadow-2xl">
@@ -48,83 +117,96 @@
         </div>
     </div>
     
-    <div id="alertBanner" class="alert-banner fixed top-5 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 px-10 py-4 rounded-lg text-lg font-medium shadow-lg z-50 hidden"></div>
+    <div id="alertBanner" class="alert-banner fixed top-5 left-1/2 -translate-x-1/2 bg-red-500 bg-opacity-20 border border-red-500 text-red-300 px-10 py-4 rounded-lg text-lg font-medium shadow-lg z-50 hidden"></div>
     
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-center text-gray-800 text-3xl md:text-4xl font-light mb-2 tracking-tight">Asthma Risk Monitoring</h1>
-        <p class="text-center text-gray-500 text-sm mb-8">Real-time health and environmental assessment</p>
-        
-        <div class="text-center mb-8 space-x-2 md:space-x-3">
-            <button onclick="window.location.href='history.html'" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">History & Trends</button>
-            <button onclick="testSound()" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200">Test Alert</button>
-            <button id="toggleSound" onclick="toggleSoundNotifications()" class="bg-white border border-gray-200 text-gray-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-50 hover:border-blue-300 transition-all duration-200"><span id="soundIcon">🔊</span> <span id="soundText">Sound On</span></button>
+        <div class="text-center mb-10">
+            <div class="flex items-center justify-center gap-3 mb-3">
+                <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                <h1 class="text-white text-4xl md:text-5xl font-semibold tracking-tight">HikOn: Asthma Risk Monitoring</h1>
+            </div>
+            <p class="text-purple-300 text-base">Real-time health and environmental assessment</p>
         </div>
         
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-            <!-- Physiological Panel -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
-                <h2 class="text-xl font-medium mb-5 text-gray-800 pb-2 border-b border-gray-200">Health Monitoring</h2>
+        <div class="text-center mb-10 space-x-3">
+            <button onclick="window.location.href='history.html'" class="btn-purple">
+                📊 History & Trends
+            </button>
+            <button onclick="testSound()" class="btn-blue">
+                Test Alert
+            </button>
+            <button id="toggleSound" onclick="toggleSoundNotifications()" class="btn-blue">
+                <span id="soundIcon">🔊</span> <span id="soundText">Sound On</span>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Health Monitoring Panel -->
+            <div class="dashboard-card">
+                <h2 class="text-2xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Health Monitoring</h2>
                 
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Blood Oxygen (SpO2)</span>
-                        <span class="text-lg font-medium text-gray-900" id="spo2">--</span>
+                <div class="space-y-3 mb-8">
+                    <div class="flex justify-between items-center py-3 border-b border-white border-opacity-10">
+                        <span class="text-sm text-purple-200">Blood Oxygen (SpO2)</span>
+                        <span class="text-2xl font-semibold text-white" id="spo2">--</span>
                     </div>
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Heart Rate</span>
-                        <span class="text-lg font-medium text-gray-900" id="heartRate">--</span>
+                    <div class="flex justify-between items-center py-3 border-b border-white border-opacity-10">
+                        <span class="text-sm text-purple-200">Heart Rate</span>
+                        <span class="text-2xl font-semibold text-white" id="heartRate">--</span>
                     </div>
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Breathing Rate</span>
-                        <span class="text-lg font-medium text-gray-900" id="breathingRate">--</span>
+                    <div class="flex justify-between items-center py-3 border-b border-white border-opacity-10">
+                        <span class="text-sm text-purple-200">Breathing Rate</span>
+                        <span class="text-2xl font-semibold text-white" id="breathingRate">--</span>
                     </div>
                     <div class="flex justify-between items-center py-3">
-                        <span class="text-sm text-gray-600">Respiratory Sounds</span>
-                        <span class="text-lg font-medium text-gray-900" id="audioDetection">--</span>
+                        <span class="text-sm text-purple-200">Respiratory Sounds</span>
+                        <span class="text-2xl font-semibold text-white" id="audioDetection">--</span>
                     </div>
                 </div>
                 
-                <div class="mt-6 pt-6 border-t border-gray-200">
-                    <div class="text-center mb-5">
-                        <span class="risk-badge inline-block px-5 py-1.5 rounded-md text-sm font-medium uppercase tracking-wide" id="physioRisk">--</span>
+                <div class="mt-8 pt-6 border-t border-white border-opacity-20">
+                    <div class="text-center mb-6">
+                        <span class="risk-badge inline-block px-6 py-2 rounded-lg text-base font-bold uppercase tracking-wider" id="physioRisk">--</span>
                     </div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Detected Issues</div>
-                    <div id="physioTriggers" class="text-sm text-gray-600 min-h-[20px]">--</div>
+                    <div class="text-xs text-purple-300 uppercase tracking-wider mb-3">DETECTED ISSUES</div>
+                    <div id="physioTriggers" class="text-sm text-blue-200 min-h-[20px]">--</div>
                 </div>
             </div>
             
-            <!-- Environmental Panel -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 md:p-7">
-                <h2 class="text-xl font-medium mb-5 text-gray-800 pb-2 border-b border-gray-200">Environmental Conditions</h2>
+            <!-- Environmental Conditions Panel -->
+            <div class="dashboard-card">
+                <h2 class="text-2xl font-semibold mb-6 text-white pb-3 border-b border-white border-opacity-20">Environmental Conditions</h2>
                 
-                <div class="space-y-2 mb-6">
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Temperature</span>
-                        <span class="text-lg font-medium text-gray-900" id="temperature">--</span>
+                <div class="space-y-3 mb-8">
+                    <div class="flex justify-between items-center py-3 border-b border-white border-opacity-10">
+                        <span class="text-sm text-purple-200">Temperature</span>
+                        <span class="text-2xl font-semibold text-white" id="temperature">--</span>
                     </div>
-                    <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Humidity</span>
-                        <span class="text-lg font-medium text-gray-900" id="humidity">--</span>
+                    <div class="flex justify-between items-center py-3 border-b border-white border-opacity-10">
+                        <span class="text-sm text-purple-200">Humidity</span>
+                        <span class="text-2xl font-semibold text-white" id="humidity">--</span>
                     </div>
                     <div class="flex justify-between items-center py-3">
-                        <span class="text-sm text-gray-600">PM2.5</span>
-                        <span class="text-lg font-medium text-gray-900" id="pm25">--</span>
+                        <span class="text-sm text-purple-200">PM2.5</span>
+                        <span class="text-2xl font-semibold text-white" id="pm25">--</span>
                     </div>
                 </div>
                 
-                <div class="mt-6 pt-6 border-t border-gray-200">
-                    <div class="text-center mb-5">
-                        <span class="risk-badge inline-block px-5 py-1.5 rounded-md text-sm font-medium uppercase tracking-wide" id="envRisk">--</span>
+                <div class="mt-8 pt-6 border-t border-white border-opacity-20">
+                    <div class="text-center mb-6">
+                        <span class="risk-badge inline-block px-6 py-2 rounded-lg text-base font-bold uppercase tracking-wider" id="envRisk">--</span>
                     </div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Environmental Triggers</div>
-                    <div id="envTriggers" class="text-sm text-gray-600 min-h-[20px]">--</div>
+                    <div class="text-xs text-purple-300 uppercase tracking-wider mb-3">ENVIRONMENTAL TRIGGERS</div>
+                    <div id="envTriggers" class="text-sm text-blue-200 min-h-[20px]">--</div>
                 </div>
             </div>
         </div>
         
-        <div class="text-center text-gray-400 text-xs mt-5" id="lastUpdate">Last updated: --</div>
+        <div class="text-center text-purple-300 text-sm mt-8" id="lastUpdate">Last updated: --</div>
         
-        <div id="loadingMessage" class="text-center text-gray-400 text-sm py-10">Loading sensor data...</div>
+        <div id="loadingMessage" class="text-center text-purple-300 text-sm py-10">Loading sensor data...</div>
     </div>
 
     <script>
@@ -316,27 +398,27 @@
 
         // Update display with risk data
         function updateDisplay(riskId, triggersId, risk, triggers) {
-            // Update risk badge styling with Tailwind - minimal colors
+            // Update risk badge styling - dark theme
             const riskBadge = document.getElementById(riskId);
             riskBadge.textContent = risk.toUpperCase();
-            riskBadge.className = 'inline-block px-5 py-1.5 rounded-md text-sm font-medium uppercase tracking-wide';
+            riskBadge.className = 'risk-badge inline-block px-6 py-2 rounded-lg text-base font-bold uppercase tracking-wider';
             
             if (risk === 'safe') {
-                riskBadge.classList.add('bg-blue-50', 'text-blue-600', 'border', 'border-blue-200');
+                riskBadge.classList.add('risk-safe');
             } else if (risk === 'medium') {
-                riskBadge.classList.add('bg-amber-50', 'text-amber-700', 'border', 'border-amber-200');
+                riskBadge.classList.add('risk-medium');
             } else if (risk === 'high') {
-                riskBadge.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+                riskBadge.classList.add('risk-high');
             }
             
             // Update triggers list
             const triggersDiv = document.getElementById(triggersId);
             if (triggers && triggers.length > 0) {
                 triggersDiv.innerHTML = '<ul class="space-y-1">' + 
-                    triggers.map(t => `<li class="text-gray-700 text-sm">• ${t}</li>`).join('') + 
+                    triggers.map(t => `<li class="text-blue-200 text-sm">• ${t}</li>`).join('') + 
                     '</ul>';
             } else {
-                triggersDiv.innerHTML = '<span class="text-blue-600 text-sm">No issues detected</span>';
+                triggersDiv.innerHTML = '<span class="text-blue-300 text-sm">No issues detected</span>';
             }
         }
 
