@@ -526,18 +526,25 @@
                 `Last updated: ${now.toLocaleTimeString()}`;
         }
 
-        // Force initial badge styling
+        // Force initial badge styling with SAFE appearance
         function initializeBadges() {
             const physioRisk = document.getElementById('physioRisk');
             const envRisk = document.getElementById('envRisk');
             
-            // Apply default styling to prevent blank badges
-            const defaultStyle = 'display: inline-block; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-size: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; background: transparent; color: #9ca3af; border: 2px solid #6b7280;';
+            // Apply SAFE styling immediately to both badges
+            const safeStyle = 'display: inline-block !important; padding: 0.5rem 1.5rem !important; border-radius: 0.5rem !important; font-size: 1rem !important; font-weight: bold !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; background: transparent !important; color: #10b981 !important; border: 2px solid #10b981 !important;';
             
-            physioRisk.style.cssText = defaultStyle;
-            envRisk.style.cssText = defaultStyle;
+            physioRisk.style.cssText = safeStyle;
+            physioRisk.textContent = 'SAFE';
+            physioRisk.className = 'risk-safe';
             
-            console.log('✅ Badges initialized with default styling');
+            envRisk.style.cssText = safeStyle;
+            envRisk.textContent = 'SAFE';
+            envRisk.className = 'risk-safe';
+            
+            console.log('✅ Badges initialized with SAFE green border styling');
+            console.log('physioRisk style:', physioRisk.style.cssText);
+            console.log('envRisk style:', envRisk.style.cssText);
         }
 
         // Check audio preference on page load
