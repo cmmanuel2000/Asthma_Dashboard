@@ -56,18 +56,39 @@
         }
 
         .risk-safe {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             background: transparent !important;
             color: #10b981 !important;
             border: 2px solid #10b981 !important;
         }
 
         .risk-medium {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             background: transparent !important;
             color: #fbbf24 !important;
             border: 2px solid #fbbf24 !important;
         }
 
         .risk-high {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             background: transparent !important;
             color: #ef4444 !important;
             border: 2px solid #ef4444 !important;
@@ -393,14 +414,17 @@
             // Update risk badge styling - dark theme
             const riskBadge = document.getElementById(riskId);
             riskBadge.textContent = risk.toUpperCase();
-            riskBadge.className = 'risk-badge inline-block px-6 py-2 rounded-lg text-base font-bold uppercase tracking-wider';
             
+            // Remove all classes first
+            riskBadge.className = '';
+            
+            // Add only the risk-specific class
             if (risk === 'safe') {
-                riskBadge.classList.add('risk-safe');
+                riskBadge.className = 'risk-safe';
             } else if (risk === 'medium') {
-                riskBadge.classList.add('risk-medium');
+                riskBadge.className = 'risk-medium';
             } else if (risk === 'high') {
-                riskBadge.classList.add('risk-high');
+                riskBadge.className = 'risk-high';
             }
             
             // Update triggers list
