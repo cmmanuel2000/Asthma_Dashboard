@@ -69,8 +69,22 @@ def get_latest_sensor_data_from_supabase():
         heart_rate_raw = latest_record.get("heart_rate", 0)
         heart_rate = heart_rate_raw * 100 if heart_rate_raw and heart_rate_raw < 2 else (heart_rate_raw if heart_rate_raw else 75)
         
-        # Use accel_mag directly as breathing rate - this is the real sensor data
-        breathing_rate_bpm = latest_record.get("accel_mag", 0)
+        # Convert accelerometer magnitude to breathing rate for 3-7 year old child
+        # At rest (accel_mag ~1.6) = 20 bpm, with movement increases to 30-40 bpm
+        # Formula: map accel_mag range (0.2-3.8) to breathing rate (18-45 bpm)
+        accel_mag = latest_record.get("accel_mag", 1.6)
+        if accel_mag:
+            # Linear mapping: lower accel = lower breathing rate
+            # 0.2-1.6 = 18-20 bpm (rest), 1.6-2.5 = 20-35 bpm (moderate), 2.5+ = 35-45 bpm (active)
+            if accel_mag <= 1.6:
+                breathing_rate_bpm = 18 + ((accel_mag - 0.2) / 1.4) * 2  # 18-20 bpm at rest
+            elif accel_mag <= 2.5:
+                breathing_rate_bpm = 20 + ((accel_mag - 1.6) / 0.9) * 15  # 20-35 bpm moderate
+            else:
+                breathing_rate_bpm = 35 + ((accel_mag - 2.5) / 1.3) * 10  # 35-45 bpm active
+            breathing_rate_bpm = max(18, min(45, breathing_rate_bpm))  # Clamp 18-45 bpm
+        else:
+            breathing_rate_bpm = 20.0  # Default resting rate
         
         sensor_data = {
             "audio_risk_level": audio_risk_level,

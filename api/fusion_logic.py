@@ -47,14 +47,15 @@ def classify_breathing_rate(bpm: float) -> int:
         return 0  # Safe
 
 # --- Main Fusion Logic ---
-def hybrid_fusion(audio_risk: int, spo2_value: float, bpm: float) -> FusionOutput:
+def hybrid_fusion(audio_risk: int, spo2_value: float, accel_mag: float) -> FusionOutput:
     """
     Calculates the final asthma risk by fusing weighted inputs from multiple sensors.
     Includes a critical override for low SpO2.
+    Note: accel_mag is accelerometer magnitude from sensor (not traditional BPM).
     """
     # 1. Classify raw sensor values into risk categories (0, 1, 2)
     spo2_risk = classify_spo2(spo2_value)
-    breathing_risk = classify_breathing_rate(bpm)
+    breathing_risk = classify_breathing_rate(accel_mag)
     individual_risks = {"audio": audio_risk, "spo2": spo2_risk, "breathing": breathing_risk}
 
     # 2. Safety Guardrail: Critical SpO2 overrides all other logic
