@@ -69,16 +69,8 @@ def get_latest_sensor_data_from_supabase():
         heart_rate_raw = latest_record.get("heart_rate", 0)
         heart_rate = heart_rate_raw * 100 if heart_rate_raw and heart_rate_raw < 2 else (heart_rate_raw if heart_rate_raw else 75)
         
-        # Calculate breathing rate from accelerometer magnitude
-        # Normalize the accel_mag (typically around 1.0-2.0 for gravity) to breathing rate (18-40 bpm range)
-        # Formula: map accel_mag variations to breathing rate
-        accel_mag = latest_record.get("accel_mag", 1.0)
-        if accel_mag:
-            # Map accelerometer magnitude: 0.5-2.5 range -> 18-35 bpm breathing rate
-            breathing_rate_bpm = 18 + ((accel_mag - 0.5) / 2.0) * 17
-            breathing_rate_bpm = max(18, min(40, breathing_rate_bpm))  # Clamp between 18-40 bpm
-        else:
-            breathing_rate_bpm = 20.0  # Default if no data
+        # Use accel_mag directly as breathing rate - this is the real sensor data
+        breathing_rate_bpm = latest_record.get("accel_mag", 0)
         
         sensor_data = {
             "audio_risk_level": audio_risk_level,
