@@ -69,10 +69,9 @@ def get_latest_sensor_data_from_supabase():
         heart_rate_raw = latest_record.get("heart_rate", 0)
         heart_rate = heart_rate_raw * 100 if heart_rate_raw and heart_rate_raw < 2 else (heart_rate_raw if heart_rate_raw else 75)
         
-        # Calculate breathing rate from accel_mag (this is a simplified estimation)
-        # You may need to adjust this based on your actual sensor logic
-        accel_mag = latest_record.get("accel_mag", 0)
-        breathing_rate_bpm = accel_mag * 100 if accel_mag and accel_mag < 2 else (accel_mag if accel_mag else 30)
+        # Use a normal breathing rate default since accelerometer data requires signal processing
+        # Normal breathing rate for children 3-7 years old is 18-30 bpm
+        breathing_rate_bpm = 20.0  # Default normal breathing rate
         
         sensor_data = {
             "audio_risk_level": audio_risk_level,
