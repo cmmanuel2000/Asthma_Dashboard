@@ -70,21 +70,30 @@ def get_latest_sensor_data_from_supabase():
         heart_rate = heart_rate_raw * 100 if heart_rate_raw and heart_rate_raw < 2 else (heart_rate_raw if heart_rate_raw else 75)
         
         # Convert accelerometer magnitude to breathing rate for 3-7 year old child
-        # At rest (accel_mag ~1.6) = 20 bpm, with movement increases to 30-40 bpm
-        # Formula: map accel_mag range (0.2-3.8) to breathing rate (18-45 bpm)
+        # At rest (accel_mag ~1.6) = 0 bpm (no breathing movement detected)
+        # Movement above baseline indicates breathing activity
+        # Formula: map accel_mag deviations from baseline (1.6) to breathing rate (0-45 bpm)
         accel_mag = latest_record.get("accel_mag", 1.6)
+        baseline = 1.6  # Resting baseline when simulator is not moving
+        
         if accel_mag:
-            # Linear mapping: lower accel = lower breathing rate
-            # 0.2-1.6 = 18-20 bpm (rest), 1.6-2.5 = 20-35 bpm (moderate), 2.5+ = 35-45 bpm (active)
-            if accel_mag <= 1.6:
-                breathing_rate_bpm = 18 + ((accel_mag - 0.2) / 1.4) * 2  # 18-20 bpm at rest
-            elif accel_mag <= 2.5:
-                breathing_rate_bpm = 20 + ((accel_mag - 1.6) / 0.9) * 15  # 20-35 bpm moderate
+            if accel_mag <= baseline:
+                # At or below baseline = no breathing detected
+                breathing_rate_bpm = 0
             else:
-                breathing_rate_bpm = 35 + ((accel_mag - 2.5) / 1.3) * 10  # 35-45 bpm active
-            breathing_rate_bpm = max(18, min(45, breathing_rate_bpm))  # Clamp 18-45 bpm
+                # Above baseline = breathing movement detected
+                # Map 1.6-2.0 = 18-25 bpm (light breathing)
+                # Map 2.0-2.5 = 25-35 bpm (normal breathing)
+                # Map 2.5+ = 35-45 bpm (elevated breathing)
+                deviation = accel_mag - baseline
+                if deviation <= 0.4:  # 1.6-2.0
+                    breathing_rate_bpm = 18 + (deviation / 0.4) * 7  # 18-25 bpm
+                elif deviation <= 0.9:  # 2.0-2.5
+                    breathing_rate_bpm = 25 + ((deviation - 0.4) / 0.5) * 10  # 25-35 bpm
+                else:  # 2.5+
+                    breathing_rate_bpm = 35 + min((deviation - 0.9) / 0.9, 1.0) * 10  # 35-45 bpm
         else:
-            breathing_rate_bpm = 20.0  # Default resting rate
+            breathing_rate_bpm = 0
         
         sensor_data = {
             "audio_risk_level": audio_risk_level,
